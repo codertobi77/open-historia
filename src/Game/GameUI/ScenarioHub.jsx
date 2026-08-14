@@ -473,9 +473,9 @@ const ScenarioHub = ({ onClose, onOpenMapEditor }) => {
 
       {/* Body */}
       <div style={{ flex: 1, overflowY: "auto", padding: "1.2rem 1.4rem 2.5rem" }}>
-        {(hubError || error) && (
+        {(hubError || editorError || error) && (
           <div style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.34)", borderRadius: "14px", color: "#fecaca", marginBottom: "0.9rem", padding: "0.8rem 0.9rem" }}>
-            {hubError || error}
+            {hubError || editorError || error}
           </div>
         )}
 

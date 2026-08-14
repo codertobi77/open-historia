@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:server": "node server/server.js",
-    "dev:full": "concurrently -k -n server,vite -c magenta,cyan \"npm run dev:server\" \"npm run dev\"",
+    "dev:server": "OH_ALLOW_CROSS_ORIGIN=1 node server/server.js",
+    "dev:full": "OH_ALLOW_CROSS_ORIGIN=1 concurrently -k -n server,vite -c magenta,cyan \"npm run dev:server\" \"npm run dev\"",
     "dev:web": "node scripts/seed-web-defaults.mjs && vite --mode web",
     "build": "vite build",
     "build:web": "node scripts/seed-web-defaults.mjs && vite build --mode web --outDir dist-web --emptyOutDir",
