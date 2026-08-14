@@ -23,6 +23,15 @@ export const PROVIDER_OPTIONS = [
         description: "Claude via Messages API",
         searchTerms: ["claude", "haiku", "sonnet", "opus"],
     },
+    // "nvidia" = NVIDIA-hosted cloud NIM endpoint (hardcoded); "nvidia-nim-compatible" =
+    // self-hosted/enterprise NIM via OpenAI-compatible protocol (user endpoint).
+    {
+        value: "nvidia",
+        label: "NVIDIA NIM",
+        group: "Native APIs",
+        description: "NVIDIA NIM / build.nvidia.com",
+        searchTerms: ["nvidia", "nim", "build.nvidia", "integrate.api.nvidia.com", "llama", "nemotron"],
+    },
     {
         value: "openai-compatible",
         label: "OpenAI Compatible",
@@ -36,6 +45,13 @@ export const PROVIDER_OPTIONS = [
         group: "Gateways and self-hosted",
         description: "Self-hosted proxy that speaks the Anthropic Messages API",
         searchTerms: ["claude", "anthropic", "messages api", "proxy", "gateway", "self-hosted"],
+    },
+    {
+        value: "nvidia-nim-compatible",
+        label: "NVIDIA NIM (OpenAI Compatible)",
+        group: "Gateways and self-hosted",
+        description: "Use a custom NIM endpoint via OpenAI-compatible protocol",
+        searchTerms: ["nvidia", "nim", "nim-compatible", "self-hosted nim"],
     },
 ];
 
@@ -80,6 +96,22 @@ const PROVIDER_SETTINGS = {
         },
         customParams: { storageKey: "openai_compatible_custom_params", defaultValue: "" },
     },
+    // "nvidia" = NVIDIA-hosted cloud NIM endpoint (hardcoded); "nvidia-nim-compatible" =
+    // self-hosted/enterprise NIM via OpenAI-compatible protocol (user endpoint).
+    "nvidia": {
+        apiKey: { storageKey: "nim_api_key", defaultValue: "" },
+        model: { storageKey: "nim_model", defaultValue: "" },
+        customParams: { storageKey: "nim_custom_params", defaultValue: "" },
+    },
+    "nvidia-nim-compatible": {
+        apiKey: { storageKey: "nim_compatible_api_key", defaultValue: "" },
+        endpoint: {
+            storageKey: "nim_compatible_endpoint",
+            defaultValue: "https://integrate.api.nvidia.com/v1",
+        },
+        model: { storageKey: "nim_compatible_model", defaultValue: "" },
+        customParams: { storageKey: "nim_compatible_custom_params", defaultValue: "" },
+    },
 };
 
 const FORM_FIELD_MAP = {
@@ -100,6 +132,13 @@ const FORM_FIELD_MAP = {
     openaiCompatibleEndpoint: { provider: "openai-compatible", field: "endpoint" },
     openaiCompatibleModel: { provider: "openai-compatible", field: "model" },
     openaiCompatibleCustomParams: { provider: "openai-compatible", field: "customParams" },
+    nimApiKey: { provider: "nvidia", field: "apiKey" },
+    nimModel: { provider: "nvidia", field: "model" },
+    nimCustomParams: { provider: "nvidia", field: "customParams" },
+    nimCompatibleApiKey: { provider: "nvidia-nim-compatible", field: "apiKey" },
+    nimCompatibleEndpoint: { provider: "nvidia-nim-compatible", field: "endpoint" },
+    nimCompatibleModel: { provider: "nvidia-nim-compatible", field: "model" },
+    nimCompatibleCustomParams: { provider: "nvidia-nim-compatible", field: "customParams" },
 };
 
 function isSupportedProvider(value) {
@@ -140,7 +179,10 @@ export function getProviderMeta(provider) {
 
 export function providerSupportsModelDiscovery(provider) {
     const normalized = normalizeProvider(provider);
-    return normalized === "openai" || normalized === "openai-compatible";
+    return normalized === "openai"
+        || normalized === "openai-compatible"
+        || normalized === "nvidia"
+        || normalized === "nvidia-nim-compatible";
 }
 
 export function getProviderField(provider, field) {

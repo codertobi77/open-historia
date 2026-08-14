@@ -12,6 +12,7 @@ The editor writes a game seed in one of two tiers: **tier 1 (re-ownership)** kee
 |---|---|---|
 | `/?editor=1` | `src/App.jsx:200` | Standalone mode. `App` reads the URL param once at render and mounts `<MapEditor />` (lazy-loaded) with no props — no `onClose`, no `onApplyToScenario`. Authoring-only; export happens via the Documents menu's download buttons. |
 | Scenario "Edit map" button | `src/Game/GameUI/libraryBar.jsx:2511` (`onOpenMapEditor`) | Embedded mode. Sets `mapEditorScenario`, opens the editor, and streams the scenario's current map assets into `mapEditorSeed`. |
+| Scenario Studio "Open Map Editor" | `src/Game/GameUI/ScenarioCreatorView.jsx` (`onOpenMapEditor`) | Same embedded mode as above, fired from the 4-step Scenario Creator wizard's asset step so a new scenario can be geo-authored without leaving the Studio tab. |
 | Embedded `<MapEditor>` mount | `src/Game/GameUI/libraryBar.jsx:2133` | Passes `onClose`, `scenarioName`, `initialMap={mapEditorSeed}`, and `onApplyToScenario`. Presence of `onApplyToScenario` is what flips the editor into "scenario mode". |
 
 `MapEditor`'s prop contract (`src/Editor/MapEditor.jsx:40`):

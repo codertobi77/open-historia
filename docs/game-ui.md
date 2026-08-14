@@ -339,7 +339,7 @@ Ownership/name resolution is done in **one namespace** (country display name) �
 | Section | Control | Persists to / calls |
 |---|---|---|
 | AI Provider | `ApiProviderSelector` — searchable catalog of `PROVIDER_OPTIONS` | `onApiProviderChange`→`Main.apiProvider`→`localStorage["api_provider"]` |
-| Provider settings | `ProviderSettingsPanel` — per-provider API key/model/custom-params (gemini, openai, anthropic, openai-compatible, anthropic-compatible) + global **Model reasoning** toggle | `persistProviderSetting` (browser localStorage); `setReasoningEnabled` |
+| Provider settings | `ProviderSettingsPanel` — per-provider API key/model/custom-params (gemini, openai, anthropic, nvidia, openai-compatible, anthropic-compatible, nvidia-nim-compatible) + global **Model reasoning** toggle; the **Model** field for discovery-capable providers (openai, openai-compatible, nvidia, nvidia-nim-compatible) is a `ModelPicker` that fetches `GET {endpoint}/models` and lets the player pick or leave blank to auto-pick | `persistProviderSetting` (browser localStorage); `setReasoningEnabled`; `ModelPicker` calls `discoverModels` (`src/Game/AI/main.jsx`) |
 | Language | `LanguageSelector` — searchable; applying reloads the page | `setStoredLanguage` (server + browser) |
 | Display | **Fullscreen**, **3D Globe**, **3D Terrain** (labeled "Very Experimental") toggles | `Main` toggles / `App.jsx` state |
 | Map | Hide country labels, **Reduce motion** (umbrella over the two below), Disable idle globe rotation, Disable camera movement during events | `setMapSetting(MAP_SETTING_KEYS.*)` (`src/runtime/mapSettings.js`) |
@@ -356,9 +356,18 @@ Ownership/name resolution is done in **one namespace** (country display name) �
 
 ---
 
-## 12. Legacy: `src/Game/GameUI/scenarios.jsx`
+## 12. Scenario Studio — `src/Game/GameUI/scenarios.jsx` + `ScenarioCreatorView.jsx` + `ScenarioHub.jsx`
 
-`ScenarioTopBar` (`scenarios.jsx:686`) is an **older, standalone** scenario deck + editor (full-width top bar z 10030, deck z 10029, editor z 10031) that reads from a separate `../../runtime/scenarios.js` store (`useScenarioState`) rather than `library.js`. It is **not imported anywhere** in `src/` — it has been superseded by `LibraryTopBar` + `EditorDrawer` in `libraryBar.jsx`. Its `ScenarioEditor` still shows the older flat prompt fields (Advisor Prompt / Leader Prompt / **Advanced AI Prompt Pack** JSON textarea) rather than the sectioned `PromptSectionEditor`. Treat it as reference/dead code unless you're wiring the old top-bar mode back in; new work goes in `libraryBar.jsx`.
+The library bar now exposes a dedicated **Scenario Studio** tab (`libraryBar.jsx`) that ships a full-screen scenario authoring surface backed by the `../../runtime/scenarios.js` store (`useScenarioState`) instead of `library.js`. It is composed of three cooperating modules:
+
+| File | Role |
+|---|---|
+| `scenarios.jsx` | The deck + editor shell. Exports `ScenarioTopBar` (the deck UI), plus shared helpers `buildEditorState(details)`, `parseAdvancedPrompts(value)`, and the re-exported style constants from `scenarioEditorStyles.js` (`actionButtonStyle`, `fieldLabelStyle`, `inputStyle`, `surfaceStyle`, `textareaStyle`, `TOP_BAR_OFFSET`). Other components import these helpers/styles from here. |
+| `ScenarioCreatorView.jsx` | A 4-step guided wizard (Overview → World → Lore/Prompts → Assets) that turns a blank scenario into a playable seed: name/eyebrow/accent/hero, player country + game date + language + deployable troop types, system/leader prompts + an **Advanced AI Prompt Pack** JSON textarea (`parseAdvancedPrompts`), and PMTiles/cover asset uploads. Mounted by `scenarios.jsx` when the editor is open. |
+| `ScenarioHub.jsx` | Browse/activate local scenarios and push one to the community hub via the GitHub issue template (`https://github.com/Open-Historia/Open-historia-scenarios/issues/new?template=scenario.yml`); wraps `createScenario`/`saveScenario`/`uploadScenarioAsset` from `../../runtime/scenarios.js`. |
+| `scenarioEditorStyles.js` | Shared style constants (`surfaceStyle`, `inputStyle`, `textareaStyle`, `fieldLabelStyle`, `actionButtonStyle`, `BAR_HEIGHT`, `TOP_BAR_OFFSET`) reused across the three components. |
+
+`ScenarioTopBar` (`scenarios.jsx`) renders the deck + editor; `buildEditorState(details)` turns a loaded `loadScenarioDetails` payload into the flat form state the wizard edits, and `parseAdvancedPrompts` validates the advanced JSON textarea. The previous full-width top-bar/deck z-indexes (10030 deck / 10029 panel / 10031 editor) are retained. New scenario-authoring work goes here, not in the `libraryBar.jsx` `EditorDrawer`.
 
 ---
 
@@ -389,6 +398,7 @@ Ownership/name resolution is done in **one namespace** (country display name) �
 | 21 | Map editor host | `libraryBar.jsx` | overlay | `isMapEditorOpen` | scenario assets | `applyMapToScenario` → many asset writes + new game |
 | 22 | ⌂ Exit Game / ⏻ shutdown / summary | `libraryBar.jsx` | cluster | `!menuOpen` | `activeGame` | `setMenuOpen(true)`, `POST /api/server/shutdown` |
 | 23 | Community hub tab | `communityHub.jsx` | panel | menu tab | GitHub hub API, `/api/hub/*` | `downloadHubBundle`+`importScenarioBundle`, publish/export |
+| 24 | Scenario Studio tab | `scenarios.jsx` + `ScenarioCreatorView.jsx` + `ScenarioHub.jsx` | full page | library tab | `useScenarioState`, scenario assets | `createScenario`/`saveScenario`/`uploadScenarioAsset`, hub issue link |
 
 ---
 

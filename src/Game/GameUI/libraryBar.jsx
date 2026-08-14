@@ -55,6 +55,9 @@ const UNIT_TYPE_LABELS = {
 const MapEditor = lazy(() => import("../../Editor/MapEditor.jsx"));
 // Lazy so the GitHub-backed Community tab costs nothing until opened.
 const CommunityPanel = lazy(() => import("./communityHub.jsx"));
+// Lazy so the local Scenario Studio (My Scenarios hub + full-screen creator)
+// only loads when its tab is opened.
+const ScenarioHub = lazy(() => import("./ScenarioHub.jsx"));
 // Lazy so OpenLayers only loads when the country picker map is opened.
 const CountryPickerMap = lazy(() => import("./CountryPickerMap.jsx"));
 
@@ -1106,6 +1109,48 @@ const LibraryTopBar = () => {
       setEditorError(nextError.message);
     } finally {
       setIsBusy(false);
+    }
+  };
+
+  // Load the scenario's current map (geometry + owners + cities + palette) and
+  // open the MapEditor with it as the seed. Shared by the EditorDrawer (which
+  // reads the closure's editorDetails) and the Scenario Studio hub (which passes
+  // its own details object). Assets stream in async; the editor hydrates on arrival.
+  const openMapEditorForDetails = (details) => {
+    const scenario = details?.scenario || null;
+    setMapEditorScenario(scenario);
+    setMapEditorSeed(null);
+    setIsMapEditorOpen(true);
+    if (scenario) {
+      const world = details?.data?.world ?? {};
+      Promise.all([
+        downloadScenarioJsonAsset(scenario.id, "regionsGeojson"),
+        downloadScenarioJsonAsset(scenario.id, "citiesGeojson"),
+        downloadScenarioJsonAsset(scenario.id, "colors"),
+        downloadScenarioJsonAsset(scenario.id, "flags"),
+        downloadScenarioJsonAsset(scenario.id, "tags"),
+        world.background?.kind ? downloadScenarioJsonAsset(scenario.id, "backgroundData") : Promise.resolve(null),
+      ]).then(([regions, cities, colors, flags, tags, bgData]) => {
+        const bgDesc = world.background;
+        const background =
+          bgDesc?.kind === "image" && bgData?.dataUrl
+            ? { kind: "image", dataUrl: bgData.dataUrl }
+            : bgDesc?.kind === "vector" && bgData?.geojson
+              ? { kind: "vector", geojson: bgData.geojson }
+              : null;
+        setMapEditorSeed({
+          name: scenario.name || "",
+          author: world.author || "",
+          ownershipOverrides: world.regionOwnershipOverrides || {},
+          regions: regions && Array.isArray(regions.features) && regions.features.length ? regions : null,
+          cities: cities && Array.isArray(cities.features) ? cities : null,
+          colors: colors && typeof colors === "object" && !Array.isArray(colors) ? colors : null,
+          flags: flags && typeof flags === "object" && !Array.isArray(flags) ? flags : null,
+          tags: tags && typeof tags === "object" && !Array.isArray(tags) ? tags : null,
+          background,
+          basemap: world.basemap || null,
+        });
+      });
     }
   };
 
@@ -2326,7 +2371,7 @@ const LibraryTopBar = () => {
             </div>
 
             <div style={{ alignItems: "center", display: "flex", gap: "0.55rem", justifyContent: "center", justifySelf: "center" }}>
-              {["games", "scenarios", "community"].map((tab) => (
+              {["games", "scenarios", "studio", "community"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -2339,13 +2384,13 @@ const LibraryTopBar = () => {
                   }}
                   type="button"
                 >
-                  {tab === "games" ? "Games" : tab === "scenarios" ? "Scenarios" : "Community"}
+                  {tab === "games" ? "Games" : tab === "scenarios" ? "Scenarios" : tab === "studio" ? "Studio" : "Community"}
                 </button>
               ))}
             </div>
 
             <div style={{ alignItems: "center", display: "flex", gap: "0.55rem", justifyContent: "flex-end" }}>
-              {activeTab !== "community" && (
+              {activeTab !== "community" && activeTab !== "studio" && (
                 <button onClick={() => refreshLibraryCatalog({ force: true }).catch(() => {})} style={actionButtonStyle} type="button">
                   {isMobile ? "⟳" : "Refresh"}
                 </button>
@@ -2385,6 +2430,21 @@ const LibraryTopBar = () => {
                 }
               >
                 <CommunityPanel fullPage onImported={() => setActiveTab("scenarios")} />
+              </Suspense>
+            ) : activeTab === "studio" ? (
+              <Suspense
+                fallback={
+                  <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.85rem", padding: "1rem 0" }}>
+                    Loading Scenario Studio…
+                  </div>
+                }
+              >
+                {/* ScenarioHub renders as a fixed full-screen overlay (zIndex 10060)
+                    so it covers the menu entirely; its onClose returns to the Scenarios tab. */}
+                <ScenarioHub
+                  onClose={() => setActiveTab("scenarios")}
+                  onOpenMapEditor={openMapEditorForDetails}
+                />
               </Suspense>
             ) : activeTab === "games" ? (
               loaded && games.length === 0 ? (
@@ -2508,51 +2568,7 @@ const LibraryTopBar = () => {
         onClose={resetEditor}
         onDelete={handleDelete}
         onExportBundle={handleExportBundle}
-        onOpenMapEditor={() => {
-          const scenario = editorDetails?.scenario || null;
-          setMapEditorScenario(scenario);
-          setMapEditorSeed(null);
-          setIsMapEditorOpen(true);
-          // Load the scenario's CURRENT map (geometry + owners + cities + palette)
-          // so the editor opens it instead of the default world. Assets stream in
-          // async; the editor hydrates the moment they arrive.
-          if (scenario) {
-            const world = editorDetails?.data?.world ?? {};
-            Promise.all([
-              downloadScenarioJsonAsset(scenario.id, "regionsGeojson"),
-              downloadScenarioJsonAsset(scenario.id, "citiesGeojson"),
-              downloadScenarioJsonAsset(scenario.id, "colors"),
-              // The author-set flags, for the same reason as the background below:
-              // without them the editor opens with none, and Apply & Play cannot
-              // tell "this map has no flags" from "this map never loaded them" —
-              // so it clears the scenario's flags.json and the author's work is gone.
-              downloadScenarioJsonAsset(scenario.id, "flags"),
-              downloadScenarioJsonAsset(scenario.id, "tags"),
-              // The custom map background so re-opening the editor restores it.
-              world.background?.kind ? downloadScenarioJsonAsset(scenario.id, "backgroundData") : Promise.resolve(null),
-            ]).then(([regions, cities, colors, flags, tags, bgData]) => {
-              const bgDesc = world.background;
-              const background =
-                bgDesc?.kind === "image" && bgData?.dataUrl
-                  ? { kind: "image", dataUrl: bgData.dataUrl }
-                  : bgDesc?.kind === "vector" && bgData?.geojson
-                    ? { kind: "vector", geojson: bgData.geojson }
-                    : null;
-              setMapEditorSeed({
-                name: scenario.name || "",
-                author: world.author || "",
-                ownershipOverrides: world.regionOwnershipOverrides || {},
-                regions: regions && Array.isArray(regions.features) && regions.features.length ? regions : null,
-                cities: cities && Array.isArray(cities.features) ? cities : null,
-                colors: colors && typeof colors === "object" && !Array.isArray(colors) ? colors : null,
-                flags: flags && typeof flags === "object" && !Array.isArray(flags) ? flags : null,
-                tags: tags && typeof tags === "object" && !Array.isArray(tags) ? tags : null,
-                background,
-                basemap: world.basemap || null,
-              });
-            });
-          }
-        }}
+        onOpenMapEditor={() => openMapEditorForDetails(editorDetails)}
         onFileSelect={handleEditorAssetSelect}
         onOpenFileDialog={(assetKey) => assetFileInputsRef.current[assetKey]?.click()}
         onSave={handleSave}

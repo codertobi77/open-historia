@@ -12,61 +12,26 @@ import {
   uploadScenarioAsset,
   useScenarioState,
 } from "../../runtime/scenarios.js";
+import ScenarioCreatorView from "./ScenarioCreatorView.jsx";
+import {
+  actionButtonStyle,
+  fieldLabelStyle,
+  inputStyle,
+  surfaceStyle,
+  textareaStyle,
+  BAR_HEIGHT,
+  TOP_BAR_OFFSET,
+} from "./scenarioEditorStyles.js";
 
-const BAR_HEIGHT = 64;
-const TOP_BAR_OFFSET = "4.75rem";
-
-const surfaceStyle = {
-  background:
-  "linear-gradient(180deg, rgba(8, 10, 17, 0.97) 0%, rgba(8, 10, 15, 0.94) 100%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
-  backdropFilter: "blur(18px)",
-  WebkitBackdropFilter: "blur(18px)",
-};
-
-const actionButtonStyle = {
-  alignItems: "center",
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: "999px",
-  color: "rgba(244,246,255,0.92)",
-  cursor: "pointer",
-  display: "inline-flex",
-  fontSize: "0.82rem",
-  fontWeight: 600,
-  gap: "0.4rem",
-  justifyContent: "center",
-  minHeight: "2.1rem",
-  padding: "0 0.95rem",
-  transition: "background 0.18s ease, border-color 0.18s ease, transform 0.18s ease",
-};
-
-const fieldLabelStyle = {
-  color: "rgba(255,255,255,0.72)",
-  display: "block",
-  fontSize: "0.75rem",
-  fontWeight: 600,
-  letterSpacing: "0.04em",
-  marginBottom: "0.45rem",
-  textTransform: "uppercase",
-};
-
-const inputStyle = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "12px",
-  color: "#f8fafc",
-  fontSize: "0.9rem",
-  outline: "none",
-  padding: "0.8rem 0.9rem",
-  width: "100%",
-};
-
-const textareaStyle = {
-  ...inputStyle,
-  minHeight: "8.5rem",
-  resize: "vertical",
+// Shared style constants and helpers are re-exported so other components
+// (ScenarioCreatorView, ScenarioHub, libraryBar) can import from a single place.
+export {
+  actionButtonStyle,
+  fieldLabelStyle,
+  inputStyle,
+  surfaceStyle,
+  textareaStyle,
+  TOP_BAR_OFFSET,
 };
 
 const uploadLabels = {
@@ -83,7 +48,7 @@ const uploadAccept = {
   regions: ".pmtiles",
 };
 
-const parseAdvancedPrompts = (value) => {
+export const parseAdvancedPrompts = (value) => {
   const trimmed = String(value ?? "").trim();
   if (!trimmed) {
     return {};
@@ -97,7 +62,7 @@ const parseAdvancedPrompts = (value) => {
   return parsed;
 };
 
-const buildEditorState = (details) => {
+export const buildEditorState = (details) => {
   const scenario = details?.scenario ?? {};
   const game = details?.data?.game ?? {};
   const prompts = details?.data?.prompts ?? {};
@@ -310,380 +275,11 @@ const ScenarioCard = ({
   );
 };
 
-const ScenarioEditor = ({
-  details,
-  editorError,
-  fileInputsRef,
-  formState,
-    isBusy,
-    onChange,
-    onClearAsset,
-    onClose,
-    onDelete,
-    onFileSelect,
-    onOpenFileDialog,
-    onSave,
-    onSetActive,
-}) => {
-  if (!details || !formState) {
-    return null;
-  }
+// The old inline ScenarioEditor modal has moved to ScenarioCreatorView.jsx
+// (the full-screen 4-step wizard). ScenarioTopBar mounts it via the onOpenMapEditor
+// prop wired by the parent. The local styles and helpers are exported above.
 
-  const { assetStatus = {}, scenario } = details;
-
-  return (
-    <div
-    style={{
-      ...surfaceStyle,
-      borderRadius: "26px",
-      bottom: "0.85rem",
-      color: "#fff",
-      maxHeight: `calc(100vh - ${BAR_HEIGHT + 32}px)`,
-          overflow: "auto",
-          padding: "1.05rem",
-          position: "fixed",
-          right: "0.85rem",
-          top: `calc(${TOP_BAR_OFFSET} + 3.5rem)`,
-          width: "min(32rem, calc(100vw - 1.2rem))",
-          zIndex: 10031,
-    }}
-    >
-    <div
-    style={{
-      alignItems: "center",
-      display: "flex",
-      gap: "0.7rem",
-      justifyContent: "space-between",
-      marginBottom: "1rem",
-    }}
-    >
-    <div>
-    <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.72rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-    Scenario Editor
-    </div>
-    <div style={{ fontSize: "1.35rem", fontWeight: 800, letterSpacing: "-0.03em", marginTop: "0.2rem" }}>
-    {scenario.name}
-    </div>
-    </div>
-    <button
-    onClick={onClose}
-    style={{
-      ...actionButtonStyle,
-      background: "rgba(255,255,255,0.04)",
-          minWidth: "2.35rem",
-          padding: 0,
-    }}
-    >
-    ×
-    </button>
-    </div>
-
-    <div
-    style={{
-      background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "18px",
-          marginBottom: "0.95rem",
-          padding: "0.9rem",
-    }}
-    >
-    <div style={{ display: "grid", gap: "0.8rem", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>Name</label>
-    <input
-    style={inputStyle}
-    value={formState.name}
-    onChange={(event) => onChange("name", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Eyebrow</label>
-    <input
-    style={inputStyle}
-    value={formState.eyebrow}
-    onChange={(event) => onChange("eyebrow", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Accent</label>
-    <input
-    style={{
-      ...inputStyle,
-      height: "3.1rem",
-      padding: "0.25rem 0.3rem",
-    }}
-    type="color"
-    value={formState.accentColor}
-    onChange={(event) => onChange("accentColor", event.target.value)}
-    />
-    </div>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>Subtitle</label>
-    <input
-    style={inputStyle}
-    value={formState.subtitle}
-    onChange={(event) => onChange("subtitle", event.target.value)}
-    />
-    </div>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>Description</label>
-    <textarea
-    style={{ ...textareaStyle, minHeight: "6.5rem" }}
-    value={formState.description}
-    onChange={(event) => onChange("description", event.target.value)}
-    />
-    </div>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>Hero Title</label>
-    <input
-    style={inputStyle}
-    value={formState.heroTitle}
-    onChange={(event) => onChange("heroTitle", event.target.value)}
-    />
-    </div>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>Hero Subtitle</label>
-    <textarea
-    style={{ ...textareaStyle, minHeight: "5.5rem" }}
-    value={formState.heroSubtitle}
-    onChange={(event) => onChange("heroSubtitle", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Player Country</label>
-    <input
-    style={inputStyle}
-    value={formState.country}
-    onChange={(event) => onChange("country", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Game Date</label>
-    <input
-    style={inputStyle}
-    value={formState.gameDate}
-    onChange={(event) => onChange("gameDate", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Language</label>
-    <input
-    style={inputStyle}
-    value={formState.language}
-    onChange={(event) => onChange("language", event.target.value)}
-    />
-    </div>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>World Before Round One</label>
-    <textarea
-    style={{ ...textareaStyle, minHeight: "8rem" }}
-    value={formState.startingTimelineText}
-    onChange={(event) => onChange("startingTimelineText", event.target.value)}
-    />
-    </div>
-    <div style={{ gridColumn: "1 / -1" }}>
-    <label style={fieldLabelStyle}>Simulation Rules</label>
-    <textarea
-    style={{ ...textareaStyle, minHeight: "8rem" }}
-    value={formState.simulationRules}
-    onChange={(event) => onChange("simulationRules", event.target.value)}
-    />
-    </div>
-    {/* Country-label styling. The font renders from each player's LOCAL fonts
-        (the map rasterizes glyphs client-side), so any installed family works —
-        the list only offers common ones. Empty font = the Impact default. */}
-    <div>
-    <label style={fieldLabelStyle}>Country Label Font</label>
-    <input
-    list="oh-label-font-options"
-    placeholder="Impact (default)"
-    style={inputStyle}
-    value={formState.labelFont}
-    onChange={(event) => onChange("labelFont", event.target.value)}
-    />
-    <datalist id="oh-label-font-options">
-    {["Impact", "Arial Black", "Arial", "Georgia", "Times New Roman", "Trebuchet MS", "Verdana", "Courier New", "Garamond", "Comic Sans MS"].map((font) => (
-      <option key={font} value={font} />
-    ))}
-    </datalist>
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Label Letter Color</label>
-    <input
-    type="color"
-    style={{ ...inputStyle, height: "2.4rem", padding: "0.2rem" }}
-    value={/^#[0-9a-fA-F]{6}$/.test(formState.labelTextColor) ? formState.labelTextColor : "#ffffff"}
-    onChange={(event) => onChange("labelTextColor", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Label Border Color</label>
-    <input
-    type="color"
-    style={{ ...inputStyle, height: "2.4rem", padding: "0.2rem" }}
-    value={/^#[0-9a-fA-F]{6}$/.test(formState.labelHaloColor) ? formState.labelHaloColor : "#000000"}
-    onChange={(event) => onChange("labelHaloColor", event.target.value)}
-    />
-    </div>
-    </div>
-    </div>
-
-    <div
-    style={{
-      background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "18px",
-          marginBottom: "0.95rem",
-          padding: "0.9rem",
-    }}
-    >
-    <div style={{ fontSize: "0.76rem", fontWeight: 700, letterSpacing: "0.08em", marginBottom: "0.75rem", textTransform: "uppercase" }}>
-    Prompts
-    </div>
-    <div style={{ display: "grid", gap: "0.9rem" }}>
-    <div>
-    <label style={fieldLabelStyle}>Advisor Prompt</label>
-    <textarea
-    style={textareaStyle}
-    value={formState.systemPrompt}
-    onChange={(event) => onChange("systemPrompt", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Leader Prompt</label>
-    <textarea
-    style={{ ...textareaStyle, minHeight: "11rem" }}
-    value={formState.leaderPrompt}
-    onChange={(event) => onChange("leaderPrompt", event.target.value)}
-    />
-    </div>
-    <div>
-    <label style={fieldLabelStyle}>Advanced AI Prompt Pack</label>
-    <textarea
-    style={{ ...textareaStyle, minHeight: "16rem", fontFamily: "Consolas, monospace", fontSize: "0.8rem" }}
-    value={formState.advancedPromptsText}
-    onChange={(event) => onChange("advancedPromptsText", event.target.value)}
-    />
-    </div>
-    </div>
-    </div>
-
-    <div
-    style={{
-      background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "18px",
-          marginBottom: "0.95rem",
-          padding: "0.9rem",
-    }}
-    >
-    <div style={{ fontSize: "0.76rem", fontWeight: 700, letterSpacing: "0.08em", marginBottom: "0.75rem", textTransform: "uppercase" }}>
-    Asset Overrides
-    </div>
-    <div style={{ display: "grid", gap: "0.7rem" }}>
-    {Object.entries(uploadLabels).map(([assetKey, label]) => (
-      <div
-      key={assetKey}
-      style={{
-        alignItems: "center",
-        background: "rgba(255,255,255,0.03)",
-                                                              border: "1px solid rgba(255,255,255,0.08)",
-                                                              borderRadius: "14px",
-                                                              display: "flex",
-                                                              gap: "0.75rem",
-                                                              justifyContent: "space-between",
-                                                              padding: "0.72rem 0.78rem",
-      }}
-      >
-      <div>
-      <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{label}</div>
-      <div style={{ color: "rgba(255,255,255,0.58)", fontSize: "0.78rem", marginTop: "0.15rem" }}>
-      {assetStatus[assetKey] ? "Stored on the server for this scenario" : "Using base asset"}
-      </div>
-      </div>
-      <div style={{ display: "flex", gap: "0.45rem" }}>
-      <button
-      onClick={() => onOpenFileDialog(assetKey)}
-      style={actionButtonStyle}
-      >
-      Upload
-      </button>
-      <button
-      onClick={() => onClearAsset(assetKey)}
-      style={{
-        ...actionButtonStyle,
-        background: "rgba(255,255,255,0.03)",
-                                                              color: assetStatus[assetKey] ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.35)",
-      }}
-      disabled={!assetStatus[assetKey]}
-      >
-      Reset
-      </button>
-      <input
-      ref={(node) => {
-        fileInputsRef.current[assetKey] = node;
-      }}
-      accept={uploadAccept[assetKey]}
-      onChange={(event) => onFileSelect(assetKey, event)}
-      style={{ display: "none" }}
-      type="file"
-      />
-      </div>
-      </div>
-    ))}
-    </div>
-    </div>
-
-    {editorError && (
-      <div
-      style={{
-        background: "rgba(248,113,113,0.12)",
-                     border: "1px solid rgba(248,113,113,0.34)",
-                     borderRadius: "14px",
-                     color: "#fecaca",
-                     marginBottom: "0.9rem",
-                     padding: "0.8rem 0.9rem",
-      }}
-      >
-      {editorError}
-      </div>
-    )}
-
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.55rem" }}>
-    <button
-    onClick={onSave}
-    style={{
-      ...actionButtonStyle,
-      background: `${scenario.accentColor}cc`,
-      borderColor: `${scenario.accentColor}dd`,
-      color: "#fff",
-      minWidth: "7.2rem",
-    }}
-    >
-    {isBusy ? "Saving..." : "Save"}
-    </button>
-    <button onClick={onSetActive} style={actionButtonStyle}>
-    Activate
-    </button>
-    {scenario.canDelete && (
-      <button
-      onClick={onDelete}
-      style={{
-        ...actionButtonStyle,
-        background: "rgba(127,29,29,0.34)",
-                            borderColor: "rgba(248,113,113,0.28)",
-                            color: "#fecaca",
-      }}
-      >
-      Delete
-      </button>
-    )}
-    </div>
-    </div>
-  );
-};
-
-const ScenarioTopBar = () => {
+const ScenarioTopBar = ({ onOpenMapEditor }) => {
   const {
     activeScenario,
     activeScenarioId,
@@ -1044,7 +640,7 @@ const ScenarioTopBar = () => {
       </div>
     )}
 
-    <ScenarioEditor
+    <ScenarioCreatorView
     details={editorDetails}
     editorError={editorError || error}
     fileInputsRef={fileInputsRef}
@@ -1065,6 +661,7 @@ const ScenarioTopBar = () => {
     onDelete={handleDelete}
     onFileSelect={handleFileSelect}
     onOpenFileDialog={(assetKey) => fileInputsRef.current[assetKey]?.click()}
+    onOpenMapEditor={onOpenMapEditor}
     onSave={handleSave}
     onSetActive={() => handleActivate(editorDetails?.scenario?.id)}
     />
@@ -1087,4 +684,4 @@ const ScenarioTopBar = () => {
   );
 };
 
-export { ScenarioTopBar, TOP_BAR_OFFSET };
+export { ScenarioTopBar };

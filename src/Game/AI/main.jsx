@@ -24,6 +24,7 @@ const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash-lite";
 const ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5";
 const OPENAI_API_ENDPOINT = "https://api.openai.com/v1";
 const ANTHROPIC_API_ENDPOINT = "https://api.anthropic.com/v1";
+const NVIDIA_API_ENDPOINT = "https://integrate.api.nvidia.com/v1";
 
 const CHAT_MODEL_HINTS = [
     /^gpt/i,
@@ -119,7 +120,7 @@ function parseCustomParams(raw, providerLabel) {
     return {};
 }
 
-function pickLikelyChatModel(models) {
+export function pickLikelyChatModel(models) {
     const modelIds = models
     .map((entry) => entry?.id)
     .filter((id) => typeof id === "string" && id.trim());
@@ -475,6 +476,30 @@ function toAnthropicMessages(history) {
     }));
 }
 
+// Fetches the raw model list from an OpenAI-style /v1/models endpoint. Returns
+// the parsed `data.data` array (each entry like {id}) — possibly empty — so the
+// caller (resolveModel, or a UI picker like ModelPicker) can pick, filter, and
+// surface errors. Throws on any non-abort failure: network/CORS (providerFetch),
+// non-2xx (with the provider's error message extracted), or bad JSON. `endpoint`
+// is normalized and appended "/models". `headers` is passed through verbatim.
+export async function discoverModels({ endpoint, headers, signal } = {}) {
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+
+    if (!normalizedEndpoint) {
+        throw new Error("An endpoint is required to discover models.");
+    }
+
+    const response = await providerFetch(`${normalizedEndpoint}/models`, { method: "GET", headers, signal });
+
+    if (!response.ok) {
+        const payload = await readErrorPayload(response);
+        throw new Error(extractErrorMessage(payload, "Could not load models from the endpoint."));
+    }
+
+    const data = await response.json();
+    return data?.data ?? [];
+}
+
 async function resolveModel(provider, { endpoint = "", headers = {}, fallbackModel = "", providerLabel, signal } = {}) {
     const settings = getProviderSettings(provider);
     const configuredModel = settings.model.trim();
@@ -498,15 +523,8 @@ async function resolveModel(provider, { endpoint = "", headers = {}, fallbackMod
     }
 
     try {
-        const response = await providerFetch(`${normalizedEndpoint}/models`, { method: "GET", headers, signal });
-
-        if (!response.ok) {
-            const payload = await readErrorPayload(response);
-            throw new Error(extractErrorMessage(payload, `Could not load models from ${providerLabel}.`));
-        }
-
-        const data = await response.json();
-        const discoveredModel = pickLikelyChatModel(data?.data ?? []);
+        const models = await discoverModels({ endpoint: normalizedEndpoint, headers, signal });
+        const discoveredModel = pickLikelyChatModel(models);
 
         if (!discoveredModel) {
             throw new Error(`No models were returned by ${providerLabel}.`);
@@ -876,6 +894,82 @@ async function callOpenAICompatible(systemPrompt, history, opts = {}) {
     });
 }
 
+// NVIDIA-hosted cloud NIM endpoint (build.nvidia.com / integrate.api.nvidia.com):
+// OpenAI-compatible /v1/chat/completions with a hardcoded API URL and Bearer key.
+// JSON-schema response_format is not supported by the cloud NIM API, so the tool
+// path relies on function calling only (no json_schema / json_object fallback).
+async function callNvidia(systemPrompt, history, opts = {}) {
+    const settings = getProviderSettings("nvidia");
+    const apiKey = settings.apiKey.trim();
+
+    if (!apiKey) {
+        throw new Error("Go to **settings** and paste your NVIDIA NIM API key - you can get one at build.nvidia.com.");
+    }
+
+    const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+    };
+
+    const model = await resolveModel("nvidia", {
+        endpoint: NVIDIA_API_ENDPOINT,
+        headers,
+        providerLabel: "NVIDIA NIM",
+        signal: opts.signal,
+    });
+
+    return callOpenAIStyleChatCompletions({
+        endpoint: NVIDIA_API_ENDPOINT,
+        headers,
+        model,
+        systemPrompt,
+        history,
+        providerLabel: "NVIDIA NIM",
+        customParams: parseCustomParams(settings.customParams, "NVIDIA NIM"),
+        allowJsonSchemaFallback: false,
+        tokenLimitField: "max_tokens",
+        ...opts,
+    });
+}
+
+// Self-hosted / enterprise NIM endpoint via the OpenAI-compatible protocol.
+// User-supplied endpoint (defaults to the NVIDIA cloud URL) and optional Bearer
+// key — some enterprise NIM servers require no auth. JSON-schema fallback stays
+// on: a self-hosted NIM build may or may not support it, so let the server say.
+async function callNvidiaCompatible(systemPrompt, history, opts = {}) {
+    const settings = getProviderSettings("nvidia-nim-compatible");
+    const endpoint = normalizeEndpoint(settings.endpoint);
+
+    if (!endpoint) {
+        throw new Error("Go to **settings**, select NVIDIA NIM (OpenAI Compatible), and enter your endpoint (for example https://integrate.api.nvidia.com/v1).");
+    }
+
+    const headers = {
+        "Content-Type": "application/json",
+        ...(settings.apiKey.trim() ? { Authorization: `Bearer ${settings.apiKey.trim()}` } : {}),
+    };
+
+    const model = await resolveModel("nvidia-nim-compatible", {
+        endpoint,
+        headers,
+        providerLabel: "NVIDIA NIM (Compatible)",
+        signal: opts.signal,
+    });
+
+    return callOpenAIStyleChatCompletions({
+        endpoint,
+        headers,
+        model,
+        systemPrompt,
+        history,
+        providerLabel: "NVIDIA NIM (Compatible)",
+        customParams: parseCustomParams(settings.customParams, "NVIDIA NIM (Compatible)"),
+        allowJsonSchemaFallback: true,
+        tokenLimitField: "max_tokens",
+        ...opts,
+    });
+}
+
 // Anthropic REQUIRES max_tokens and 400s if it exceeds the model's ceiling (the error
 // states that ceiling). Since the output cap was removed on purpose, request the model's
 // maximum: start high, and on that 400 learn + cache the model's real ceiling so later
@@ -1118,6 +1212,10 @@ export async function callAI(systemPrompt, history, opts = {}) {
         return callAnthropicCompatible(systemPrompt, history, providerOpts);
     case "openai-compatible":
         return callOpenAICompatible(systemPrompt, history, providerOpts);
+    case "nvidia":
+        return callNvidia(systemPrompt, history, providerOpts);
+    case "nvidia-nim-compatible":
+        return callNvidiaCompatible(systemPrompt, history, providerOpts);
     case "gemini":
     default:
         return callGemini(systemPrompt, history, providerOpts);

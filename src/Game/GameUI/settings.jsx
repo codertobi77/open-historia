@@ -5,7 +5,6 @@ import {
     PROVIDER_OPTIONS,
     getProviderMeta,
     getReasoningEnabled,
-    providerSupportsModelDiscovery,
     setReasoningEnabled,
 } from "../AI/providerConfig.js";
 import {
@@ -20,6 +19,7 @@ import {
     getMapSetting,
     setMapSetting,
 } from "../../runtime/mapSettings.js";
+import ModelPicker from "./ModelPicker.jsx";
 
 const baseStyle = {
     position: "fixed",
@@ -412,7 +412,6 @@ const SettingsInput = ({
 
 const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
     const meta = getProviderMeta(provider);
-    const supportsModelDiscovery = providerSupportsModelDiscovery(provider);
     // Global reasoning toggle — one switch, applied in every provider mode.
     const [reasoningOn, setReasoningOn] = useState(() => getReasoningEnabled());
     const toggleReasoning = () => {
@@ -476,16 +475,15 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
             placeholder="Paste OpenAI API key"
             helperText="Stored only in this browser."
             />
-            <SettingsInput
-            label="Model"
+            <ModelPicker
+            provider="openai"
+            endpoint="https://api.openai.com/v1"
+            apiKey={settings.openaiApiKey ?? ""}
             value={settings.openaiModel ?? ""}
             onChange={(value) => onSettingChange("openaiModel", value)}
             placeholder="gpt-..."
-            helperText={
-                supportsModelDiscovery
-                    ? "Leave blank to auto-pick a chat-capable model from /v1/models."
-                    : "Enter the exact model id."
-            }
+            helperText="Leave blank to auto-pick a chat-capable model from /v1/models."
+            supportsDiscovery={true}
             />
             <SettingsInput
             label="Custom parameters (JSON)"
@@ -526,6 +524,37 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
             </>
         )}
 
+        {provider === "nvidia" && (
+            <>
+            <SettingsInput
+            label="NVIDIA API Key"
+            type="password"
+            value={settings.nimApiKey ?? ""}
+            onChange={(value) => onSettingChange("nimApiKey", value)}
+            placeholder="Paste NVIDIA NIM API key"
+            helperText="Stored only in this browser. Get one at build.nvidia.com."
+            />
+            <ModelPicker
+            provider="nvidia"
+            endpoint="https://integrate.api.nvidia.com/v1"
+            apiKey={settings.nimApiKey ?? ""}
+            value={settings.nimModel ?? ""}
+            onChange={(value) => onSettingChange("nimModel", value)}
+            placeholder="meta/llama-3.3-70b-instruct"
+            helperText="Leave blank to auto-pick a model from /v1/models."
+            supportsDiscovery={true}
+            />
+            <SettingsInput
+            label="Custom parameters (JSON)"
+            multiline
+            value={settings.nimCustomParams ?? ""}
+            onChange={(value) => onSettingChange("nimCustomParams", value)}
+            placeholder='{"top_p": 0.9}'
+            helperText="Optional. Merged into the request body — e.g. to limit reasoning budget/effort. Invalid JSON is ignored."
+            />
+            </>
+        )}
+
         {provider === "openai-compatible" && (
             <>
             <SettingsInput
@@ -548,18 +577,59 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
             placeholder="Leave empty for local Ollama"
             helperText="Use a bearer token if your gateway requires authentication."
             />
-            <SettingsInput
-            label="Model"
+            <ModelPicker
+            provider="openai-compatible"
+            endpoint={settings.openaiCompatibleEndpoint ?? ""}
+            apiKey={settings.openaiCompatibleApiKey ?? ""}
             value={settings.openaiCompatibleModel ?? ""}
             onChange={(value) => onSettingChange("openaiCompatibleModel", value)}
             placeholder="llama / qwen / gpt / mistral"
             helperText="Leave blank to auto-pick a model from /models."
+            supportsDiscovery={true}
             />
             <SettingsInput
             label="Custom parameters (JSON)"
             multiline
             value={settings.openaiCompatibleCustomParams ?? ""}
             onChange={(value) => onSettingChange("openaiCompatibleCustomParams", value)}
+            placeholder='{"top_p": 0.9}'
+            helperText="Optional. Merged into the request body — e.g. to limit reasoning budget/effort. Invalid JSON is ignored."
+            />
+            </>
+        )}
+
+        {provider === "nvidia-nim-compatible" && (
+            <>
+            <SettingsInput
+            label="API Endpoint"
+            value={settings.nimCompatibleEndpoint ?? ""}
+            onChange={(value) => onSettingChange("nimCompatibleEndpoint", value)}
+            placeholder="https://integrate.api.nvidia.com/v1"
+            helperText="Base URL that exposes /chat/completions and /models."
+            />
+            <SettingsInput
+            label="API Key (optional)"
+            type="password"
+            value={settings.nimCompatibleApiKey ?? ""}
+            onChange={(value) => onSettingChange("nimCompatibleApiKey", value)}
+            placeholder="Leave empty if your NIM server requires no auth"
+            helperText="Use a bearer token if your NIM server requires authentication."
+            />
+            <ModelPicker
+            provider="nvidia-nim-compatible"
+            endpoint={settings.nimCompatibleEndpoint ?? ""}
+            apiKey={settings.nimCompatibleApiKey ?? ""}
+            value={settings.nimCompatibleModel ?? ""}
+            onChange={(value) => onSettingChange("nimCompatibleModel", value)}
+            placeholder="meta/llama-3.3-70b-instruct"
+            helperText="Leave blank to auto-pick a model from /models."
+            supportsDiscovery={true}
+            />
+            <SettingsInput
+            label="Custom parameters (JSON)"
+            multiline
+            value={settings.nimCompatibleCustomParams ?? ""}
+            onChange={(value) => onSettingChange("nimCompatibleCustomParams", value)}
             placeholder='{"top_p": 0.9}'
             helperText="Optional. Merged into the request body — e.g. to limit reasoning budget/effort. Invalid JSON is ignored."
             />

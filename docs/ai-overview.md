@@ -27,12 +27,16 @@ Defined in `PROVIDER_OPTIONS` at `src/Game/AI/providerConfig.js:4`. The selected
 | `gemini` | Gemini | Native APIs | `callGemini` (`main.jsx:460`) | `generativelanguage.googleapis.com/v1beta` (hard‑coded, key in query) | **direct only** (`fetch`) | no |
 | `openai` | OpenAI | Native APIs | `callOpenAI` → `callOpenAIStyleChatCompletions` (`main.jsx:702`) | `https://api.openai.com/v1` | `providerFetch` (direct, relay if local) | yes |
 | `anthropic` | Anthropic | Native APIs | `callAnthropic` (`main.jsx:770`) | `https://api.anthropic.com/v1` | **direct only** (`fetch`, browser‑access opt‑in header) | no |
+| `nvidia` | NVIDIA NIM | Native APIs | `callNvidia` (`main.jsx`) | `https://integrate.api.nvidia.com/v1` (hard-coded) | `providerFetch` | yes |
 | `openai-compatible` | OpenAI Compatible | Gateways & self‑hosted | `callOpenAICompatible` (`main.jsx:736`) | user `endpoint` (default `http://localhost:11434/v1`) | `providerFetch` | yes |
 | `anthropic-compatible` | Anthropic Compatible | Gateways & self‑hosted | `callAnthropicCompatible` (`main.jsx:858`) | user `endpoint` | `providerFetch` | no |
+| `nvidia-nim-compatible` | NVIDIA NIM (OpenAI Compatible) | Gateways & self-hosted | `callNvidiaCompatible` (`main.jsx`) | user `endpoint` (default `https://integrate.api.nvidia.com/v1`) | `providerFetch` | yes |
 
 `callAI` (`main.jsx:942`) is the single switch over `getStoredProvider()`; `gemini` is the `default` branch. Before dispatch it appends a language directive (`languageDirective()`, [i18n](i18n.md)) so replies come back in the player's language at the source.
 
 "OpenAI Compatible" is the catch‑all for Ollama, LM Studio, OpenRouter, vLLM, and other gateways speaking `/chat/completions`. "Anthropic Compatible" is a self‑hosted proxy speaking the Anthropic Messages API. Both share their native sibling's caller body but read a different settings namespace and are relay‑capable.
+
+"NVIDIA NIM" (`nvidia`) points at NVIDIA’s hosted cloud endpoint `https://integrate.api.nvidia.com/v1` and speaks the OpenAI `/chat/completions` protocol; it is registered as a Native API so a player only pastes a key from build.nvidia.com. "NVIDIA NIM (OpenAI Compatible)" (`nvidia‑nim‑compatible`) is the self‑hosted/enterprise variant: same protocol, but the player supplies their own NIM endpoint URL (defaulted to the NVIDIA cloud URL). Both share `callOpenAIStyleChatCompletions` under the hood (`callNvidia`/`callNvidiaCompatible`) and, like the other OpenAI‑style providers, support model discovery (`GET /v1/models`) so a blank model field auto‑picks a chat‑capable id.
 
 ---
 
@@ -45,8 +49,10 @@ All AI config lives in **browser `localStorage`** — never on a server. `PROVID
 | `gemini` | `gemini_api_key` | `gemini_model` (`gemini-3.1-flash-lite-preview`) | — | `gemini_custom_params` |
 | `openai` | `openai_api_key` | `openai_model` (`""` → discovery) | — (fixed) | `openai_custom_params` |
 | `anthropic` | `anthropic_api_key` | `anthropic_model` (`claude-haiku-4-5`) | — (fixed) | `anthropic_custom_params` |
+| `nvidia` | `nim_api_key` | `nim_model` (`""` → discovery) | — (fixed) | `nim_custom_params` |
 | `openai-compatible` | `openai_compatible_api_key` | `openai_compatible_model` (`""`) | `openai_compatible_endpoint` (`http://localhost:11434/v1`) | `openai_compatible_custom_params` |
 | `anthropic-compatible` | `anthropic_compatible_api_key` | `anthropic_compatible_model` (`claude-haiku-4-5`) | `anthropic_compatible_endpoint` (`""`) | `anthropic_compatible_custom_params` |
+| `nvidia-nim-compatible` | `nim_compatible_api_key` | `nim_compatible_model` (`""`) | `nim_compatible_endpoint` (`https://integrate.api.nvidia.com/v1`) | `nim_compatible_custom_params` |
 
 Notes:
 - **Legacy keys**: `openai-compatible` `endpoint`/`model` fall back to the pre‑rename `custom_api_endpoint`/`custom_api_model` keys (`readStoredValue`, `providerConfig.js:109`).
@@ -79,7 +85,7 @@ The whole security model is in the comment block at `main.jsx:225`. AI calls go 
 - **`PAGE_IS_LOCAL`** (`main.jsx:250`, from `isLocallyServed()`): true when the page is served from a machine the player controls — `localhost`/`127.0.0.1`/`::1`/`*.local` or the LAN private ranges `10.*`, `192.168.*`, `172.16–31.*`. The LAN ranges cover the Android client, which loads the UI from a local server on the home network.
 - **`providerFetch(url, options)`** (`main.jsx:303`): tries `directFetch`; on a CORS/network `TypeError` (not an abort) **and** only when `PAGE_IS_LOCAL`, it remembers the origin in `relayOnlyOrigins` and retries through the same‑origin `/api/ai/relay` (`relayFetch`, `main.jsx:284`). A remembered origin skips the doomed direct attempt on later calls.
 - On a **hosted website** there is no relay: every call is direct‑only and the key is never handed to anything but the provider. If a hosted page tries to reach a **local** backend (Ollama/LM Studio) and the browser rejects it, `providerFetch` throws an actionable error telling the user to set `OLLAMA_ORIGINS`/enable CORS (`main.jsx:321`).
-- **Who uses the relay**: only the `providerFetch` callers — `openai`, `openai-compatible`, `anthropic-compatible`, and model discovery (`GET /models`). **Native Gemini and native Anthropic bypass `providerFetch` entirely** (plain `fetch`), because both explicitly allow browser calls (Anthropic via the `anthropic-dangerous-direct-browser-access: true` header, `main.jsx:795`). They are therefore always direct, relay or not.
+- **Who uses the relay**: only the `providerFetch` callers — `openai`, `openai-compatible`, `anthropic-compatible`, `nvidia`, `nvidia-nim-compatible`, and model discovery (`GET /models`). **Native Gemini and native Anthropic bypass `providerFetch` entirely** (plain `fetch`), because both explicitly allow browser calls (Anthropic via the `anthropic-dangerous-direct-browser-access: true` header, `main.jsx:795`). They are therefore always direct, relay or not.
 
 `isLocalEndpoint(url)` (`main.jsx:269`) is the per‑endpoint sibling of `PAGE_IS_LOCAL`; it also gates local streaming (below).
 
@@ -91,7 +97,7 @@ The whole security model is in the comment block at `main.jsx:225`. AI calls go 
 
 1. A configured `model` in settings wins (Gemini strips a `models/` prefix).
 2. Else the caller's `fallbackModel` (Gemini/Anthropic native/compatible defaults).
-3. Else, if `providerSupportsModelDiscovery(provider)` (only `openai` and `openai-compatible`, `providerConfig.js:141`), `GET {endpoint}/models` and pick a likely chat model via `pickLikelyChatModel` (`main.jsx:122`) against `CHAT_MODEL_HINTS`/`NON_CHAT_MODEL_HINTS` (`main.jsx:28`). The discovered id is persisted back with `setProviderField`.
+3. Else, if `providerSupportsModelDiscovery(provider)` (`openai`, `openai-compatible`, `nvidia`, and `nvidia-nim-compatible`; `providerConfig.js:141`), `GET {endpoint}/models` and pick a likely chat model via `pickLikelyChatModel` (`main.jsx:122`) against `CHAT_MODEL_HINTS`/`NON_CHAT_MODEL_HINTS` (`main.jsx:28`). The discovered id is persisted back with `setProviderField`. The raw /models fetch is factored into `discoverModels({endpoint, headers, signal})` (`main.jsx`), which the settings `ModelPicker` also calls to populate its dropdown.
 4. Else throw a "go to settings and enter a model/endpoint" error.
 
 ---
@@ -256,3 +262,4 @@ See [World state](world-state.md) for the shape of what these writers touch, and
 | `runJsonTask(taskKey, opts)` | `gameplay.js:382` | Structured task runner (2 attempts, validate/salvage, fallback). |
 | `simulateTimelineJump`, `applyGameMasterCommand`, `generateActionSuggestions`, … | `gameplay.js` | Task entry points (see [catalog](#task-catalog)). |
 | `getGameplayTool`, `validateGameplayPayload` | `gameplaySchemas.js:733`, `:852` | taskKey → tool, payload schema check. See [AI schemas](ai-schemas.md). |
+| `discoverModels`, `pickLikelyChatModel` | `main.jsx` | `GET {endpoint}/models` raw list + heuristic chat-model picker; used by `resolveModel` and the settings `ModelPicker` (`src/Game/GameUI/ModelPicker.jsx`). |
