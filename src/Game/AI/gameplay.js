@@ -437,6 +437,7 @@ const runJsonTask = async (taskKey, {
     // Place renaming: appended at call time so existing frozen-prompt campaigns get it
     // too; the markerOps rename op ships via the LIVE tool schema either way.
     systemPrompt = `${systemPrompt}\n\n[Place Renaming]\nYou may rename places when the story warrants it (a city renamed after a leader or ideology, a capital re-designated, a colonial name replaced, a conquered city given the conqueror's name). Emit an impacts.markerOps entry {"op":"rename","name":"<current name>","newName":"<new name>","note":"<why>"}. This works on structures you built AND on existing map cities. Do it sparingly and only when a real event motivates it.`;
+    systemPrompt = `${systemPrompt}\n\n[National Statistics Evolution]\nEach polity already has a persistent national statistics sheet (capital, leader, government, stability, indices, economy, gdpBreakdown) that only changes when you change it. At every jump, examine every polity TANGIBLY affected by this period's events (a polity whose land, leadership, economy, stability, alliances, or standing actually moved) and emit an impacts.polityChanges entry for it whose \"stats\" field carries ONLY the fields that changed — absolute values, never deltas. Leave the rest so the sheet persists. Examples: a war that drains the treasury changes economy.publicDebt/gdpGrowth and stability; a crop failure changes indices.foodAutonomy; a revolution changes leader/government/stability; a trade boom changes economy.gdp/gdpPerCapita and indices.economicIndependence; an arms build-up changes nothing mandatory but may lower economy.budgetBalance. Send economy, indices, or gdpBreakdown ONLY when the period genuinely moved them; a quiet period for a polity emits NO polityChanges entry for it. Never silently reset a polity's stats: omit fields you do not change.`;
   }
 
   // The consolidator's summary REPLACES what it covers, so anything it leaves out
@@ -2062,10 +2063,63 @@ const formatDurationLabel = (days) => {
   return pluralize(whole, "day");
 };
 
+// Best-effort auto-seed of persistent national stat sheets before a jump
+// (Chantier 3). A polity that appears on the map but has no stat sheet yet
+// can't be mutated by the AI's polityChanges.stats, so we seed it here so the
+// stats evolution directive has something to merge into. Bounded + silent:
+// this only smooths the first encounter and must never block a turn.
+const ENSURE_STAT_SEED_MAX = 8;
+const ensureStatSheetsForJump = async (bundle) => {
+  const world = bundle?.world;
+  const existing = world?.countryStats && typeof world.countryStats === "object" ? world.countryStats : {};
+  const seen = new Set(Object.keys(existing));
+
+  const candidates = new Set();
+  if (bundle?.game?.country) candidates.add(String(bundle.game.country));
+  if (world?.polityOverrides && typeof world.polityOverrides === "object") {
+    for (const code of Object.keys(world.polityOverrides)) candidates.add(String(code));
+  }
+  if (world?.regionOwnershipOverrides && typeof world.regionOwnershipOverrides === "object") {
+    for (const owner of Object.values(world.regionOwnershipOverrides)) {
+      if (owner) candidates.add(String(owner));
+    }
+  }
+
+  const missing = Array.from(candidates)
+    .map((code) => normalizeString(code))
+    .filter((code) => code && !seen.has(code))
+    .slice(0, ENSURE_STAT_SEED_MAX);
+
+  for (const code of missing) {
+    try {
+      // seedMissing=true below lets the helper no-op if another caller just
+      // persisted a sheet for the same code (a re-read guards the write path).
+      await maybeGenerateCountryStatSheet({ code });
+      seen.add(code);
+    } catch (error) {
+      console.warn(`[ai] auto-seed of stat sheet for ${code} failed:`, error);
+    }
+  }
+};
+
+// Like generateCountryStatSheet but a no-op when a sheet already exists. Keeps
+// the auto-seed a pure first-time affair (never re-regenerates an existing
+// sheet the AI purposefully maintained).
+const maybeGenerateCountryStatSheet = async ({ code, name } = {}) => {
+  const existing = await readWorldState({ force: true });
+  const codeKey = normalizeString(code);
+  if (!codeKey) return null;
+  if (existing?.countryStats && typeof existing.countryStats === "object" && existing.countryStats[codeKey]) {
+    return existing.countryStats[codeKey];
+  }
+  return generateCountryStatSheet({ code: codeKey, name });
+};
+
 export const simulateTimelineJump = async ({ days, mode = "jump", signal } = {}) => {
   beginSimulation();
   try {
   const bundle = await readGameStateBundle({ force: true });
+  await ensureStatSheetsForJump(bundle);
   const baseColors = await readJson(JSON_URLS.colors, { defaultValue: {}, force: true });
   // Fractional days are allowed so sub-day skips (e.g. 6h = 0.25) work; the game
   // date only advances in whole days, so a sub-day skip keeps the same date.

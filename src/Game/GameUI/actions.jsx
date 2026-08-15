@@ -12,6 +12,8 @@ import {
     readActionsState,
     writeActionsState,
 } from "../../runtime/gameState.js";
+import FloatPanel from "./FloatPanel.jsx";
+import { useIsMobile } from "../../runtime/useIsMobile.js";
 
 dayjs.extend(advancedFormat);
 
@@ -223,6 +225,7 @@ const SuggestionCard = ({ topic, onQueue, queuedIds }) => (
 );
 
 const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
+    const isMobile = useIsMobile();
     const [actions, setActions] = React.useState([]);
     const [inputValue, setInputValue] = React.useState("");
     const [country, setCountry] = React.useState("your nation");
@@ -412,72 +415,10 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
     ? (isSuggesting ? "Refreshing AI suggestions..." : "Refresh AI suggestions")
     : (isSuggesting ? "Loading AI suggestions..." : "Get AI suggestions");
 
-    return (
-        <div
-        style={{
-            backdropFilter: "blur(8px)",
-            backgroundColor: "rgba(17, 24, 39, 0.95)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "16px",
-            bottom: isOpen ? "4.25rem" : "-30rem",
-            boxShadow: "-4px 0 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            fontFamily: "sans-serif",
-            // Grow to use the height a taller screen offers (leaving ~16rem for the
-            // top bar), never dropping below a usable 30rem floor for laptops/phones,
-            // and never past the 9rem the top UI needs (so it can't overflow up).
-            height: "min(calc(100vh - 9rem), max(calc(100vh - 16rem), 30rem))",
-            minHeight: "10rem",
-            left: "0rem",
-            maxWidth: "calc(100vw - 1rem)",
-            opacity: isOpen ? 1 : 0,
-            overflow: "hidden",
-            pointerEvents: isOpen ? "auto" : "none",
-            position: "fixed",
-            transition: "bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
-            width: "26.25rem",
-            zIndex: 9998,
-        }}
-        >
-        <div
-        style={{
-            alignItems: "center",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "1rem 1.25rem 0.75rem",
-        }}
-        >
-        <span style={{ fontSize: "1rem", fontWeight: 700, letterSpacing: "0.01em" }}>Actions</span>
-        <button
-        type="button"
-        onClick={onClose}
-        style={{
-            background: "none",
-            border: "none",
-            borderRadius: "6px",
-            color: "rgba(255,255,255,0.5)",
-            cursor: "pointer",
-            fontSize: "1.1rem",
-            lineHeight: 1,
-            padding: "0.15rem 0.3rem",
-            transition: "color 0.15s, background 0.15s",
-        }}
-        onMouseEnter={(event) => {
-            event.currentTarget.style.color = "white";
-            event.currentTarget.style.background = "rgba(255,255,255,0.08)";
-        }}
-        onMouseLeave={(event) => {
-            event.currentTarget.style.color = "rgba(255,255,255,0.5)";
-            event.currentTarget.style.background = "none";
-        }}
-        >
-        {"\u2715"}
-        </button>
-        </div>
-
+    // Desktop renders the chromeless body inside FloatPanel (drag/resize/persist);
+    // mobile keeps the legacy bottom-anchored fixed panel with its own header.
+    const panelBody = (
+        <>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem", padding: "0.875rem 1.25rem", flex: 1, minHeight: 0, overflow: "hidden" }}>
         <p
         style={{
@@ -615,6 +556,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             display: "flex",
             gap: "0.5rem",
             padding: "0.75rem 1rem",
+            flexShrink: 0,
         }}
         >
         <div style={{ alignItems: "stretch", display: "flex", flex: 1, position: "relative" }}>
@@ -707,8 +649,96 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         {isSubmitting ? <SpinnerRing size={14} /> : <SendIcon />}
         </button>
         </div>
-        </div>
-    );
+        </>
+        );
+
+        return (
+            <>
+            {isMobile ? (
+                <div
+                    style={{
+                        backdropFilter: "blur(8px)",
+                        backgroundColor: "rgba(17, 24, 39, 0.95)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "16px",
+                        bottom: isOpen ? "4.25rem" : "-30rem",
+                        boxShadow: "-4px 0 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+                        color: "white",
+                        display: "flex",
+                        flexDirection: "column",
+                        fontFamily: "sans-serif",
+                        height: "min(calc(100vh - 9rem), max(calc(100vh - 16rem), 30rem))",
+                        minHeight: "10rem",
+                        left: "0rem",
+                        maxWidth: "calc(100vw - 1rem)",
+                        opacity: isOpen ? 1 : 0,
+                        overflow: "hidden",
+                        pointerEvents: isOpen ? "auto" : "none",
+                        position: "fixed",
+                        transition: "bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease",
+                        width: "26.25rem",
+                        zIndex: 9998,
+                    }}
+                >
+                    <div
+                        style={{
+                            alignItems: "center",
+                            borderBottom: "1px solid rgba(255,255,255,0.07)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "1rem 1.25rem 0.75rem",
+                            flexShrink: 0,
+                        }}
+                    >
+                        <span style={{ fontSize: "1rem", fontWeight: 700, letterSpacing: "0.01em" }}>Actions</span>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            style={{
+                                background: "none",
+                                border: "none",
+                                borderRadius: "6px",
+                                color: "rgba(255,255,255,0.5)",
+                                cursor: "pointer",
+                                fontSize: "1.1rem",
+                                lineHeight: 1,
+                                padding: "0.15rem 0.3rem",
+                                transition: "color 0.15s, background 0.15s",
+                            }}
+                            onMouseEnter={(event) => {
+                                event.currentTarget.style.color = "white";
+                                event.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                            }}
+                            onMouseLeave={(event) => {
+                                event.currentTarget.style.color = "rgba(255,255,255,0.5)";
+                                event.currentTarget.style.background = "none";
+                            }}
+                        >
+                            {"\u2715"}
+                        </button>
+                    </div>
+                    {panelBody}
+                </div>
+            ) : (
+                <FloatPanel
+                    panelId="actions"
+                    title="Actions"
+                    isOpen={isOpen}
+                    onClose={onClose}
+                    initialW={420}
+                    initialH={480}
+                    minW={320}
+                    minH={360}
+                    zIndex={9998}
+                    hideWhenClosed={true}
+                >
+                    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                        {panelBody}
+                    </div>
+                </FloatPanel>
+            )}
+            </>
+        );
 };
 
 const Actions = ({ onOpenAdvisor, hovered, setHovered, isOpen, onToggle }) => {

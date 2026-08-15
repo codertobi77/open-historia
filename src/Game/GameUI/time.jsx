@@ -15,14 +15,17 @@ import { isMainMenuOpen } from "./libraryBar";
 import {
     applyEventImpactsToWorld,
     normalizeActions,
+    readChatsState,
     readEventsState,
     readGameData,
     readWorldState,
 } from "../../runtime/gameState.js";
+import { flagEmojiFromGid } from "../../runtime/countryFlags.js";
 import { setWorldStateOverride } from "../Map/useWorldState.js";
 import { setUnitsOverride } from "../Map/unitsController.js";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
 import { MAP_SETTING_KEYS, useMapSetting } from "../../runtime/mapSettings.js";
+import { FloatPanel } from "./FloatPanel.jsx";
 
 dayjs.extend(advancedFormat);
 
@@ -266,6 +269,22 @@ const collectEventTags = (event, { polityLookup, regionLookup }) => {
 
 const buildEventLookup = (events) => new Map((events ?? []).map((event) => [event.id, event]));
 
+// Group persisted chats by the sub-linked event id (Chantier 4). Only chats
+// created BECAUSE of an event carry a non-empty linkedEventId — outreach chats
+// pass "" (see applySimulationResult), so they never land here and the dropdown
+// stays scoped to event-created diplomacy exactly as the plan requires.
+const buildChatsByEventId = (chats) => {
+    const map = new Map();
+    for (const chat of chats ?? []) {
+        const eventId = String(chat?.linkedEventId ?? "").trim();
+        if (!eventId) continue;
+        const bucket = map.get(eventId);
+        if (bucket) bucket.push(chat);
+        else map.set(eventId, [chat]);
+    }
+    return map;
+};
+
 let regionBoundsPromise = null;
 let countryBoundsPromise = null;
 
@@ -404,6 +423,14 @@ const loadCountryBounds = async () => {
     return countryBoundsPromise;
 };
 
+// A [lng,lat] point padded ~0.6° into a minimal bounds box, so fitBounds can
+// hold the camera around a freshly spawned/moved unit or built structure.
+const POINT_PAD = 0.6;
+const pointToBounds = (lng, lat, pad = POINT_PAD) =>
+    Number.isFinite(lng) && Number.isFinite(lat)
+        ? [[lng - pad, lat - pad], [lng + pad, lat + pad]]
+        : null;
+
 const getEventFocusBounds = (event, { countryBounds, regionBounds }) => {
     let resolvedBounds = null;
 
@@ -423,6 +450,24 @@ const getEventFocusBounds = (event, { countryBounds, regionBounds }) => {
         }
 
         resolvedBounds = extendBounds(resolvedBounds, countryBounds.get(code) || null);
+    }
+
+    // Spawn/move units and built structures give the camera a concrete location:
+    // zoom to that point before the element lands on the map.
+    for (const unitOp of event?.impacts?.unitOps ?? []) {
+        if (unitOp?.op === "spawn") {
+            const u = unitOp.unit || {};
+            resolvedBounds = extendBounds(resolvedBounds, pointToBounds(Number(u.lng), Number(u.lat)));
+        } else if (unitOp?.op === "move") {
+            resolvedBounds = extendBounds(resolvedBounds, pointToBounds(Number(unitOp.toLng), Number(unitOp.toLat)));
+        }
+    }
+
+    for (const markerOp of event?.impacts?.markerOps ?? []) {
+        if (markerOp?.op === "build" || markerOp?.op === "found") {
+            const m = markerOp.marker || markerOp;
+            resolvedBounds = extendBounds(resolvedBounds, pointToBounds(Number(m.lng), Number(m.lat)));
+        }
     }
 
     return resolvedBounds;
@@ -635,9 +680,128 @@ const ghostButtonStyle = {
     transition: "all 0.15s ease",
 };
 
+// The place or polity an event is about — surfaced top-right in the card
+// header (Chantier 2). Region transfers take precedence (the camera fits
+// the region on reveal), then polity changes, then the first chat country.
+const resolveEventLocationLabel = (event, { polityLookup, regionLookup }) => {
+    const transfers = event?.impacts?.regionTransfers ?? [];
+    if (transfers.length) {
+        const t = transfers[0];
+        const regionName = resolveRegionName(t, regionLookup);
+        const ownerName = resolvePolityName(t.toCode, polityLookup);
+        return regionName || ownerName || "";
+    }
+    const change = event?.impacts?.polityChanges?.[0];
+    if (change) {
+        return change.name || resolvePolityName(change.code, polityLookup) || "";
+    }
+    const chat = event?.impacts?.createdChats?.[0];
+    if (chat?.countries?.length) {
+        return chat.countries[0].name || "";
+    }
+    return "";
+};
+
+// Chantier 4 — per-event diplomacy dropdown. The AI opens a diplomatic chat
+// BECAUSE a turn event warrants one (an ultimatum, a mediation, a delegation);
+// those persisted chats link back to the event via linkedEventId, and this row
+// surfaces them under the event's text, speaker-first, collapsible. It lists
+// chats THIS event created only — top-level outreach (linkedEventId "") is
+// never grouped here, so idle diplomacy stays off the timeline card. It is
+// display-only: the real thread lives in the Chat panel and is never written
+// from here.
+const FALLBACK_FLAG = "🏳";
+
+const flagForSpeaker = (chat, message) => {
+    const speaker = String(message?.speaker ?? "").trim();
+    const country = (chat?.countries ?? []).find((c) =>
+        c && String(c.name ?? "").trim() === speaker);
+    return flagEmojiFromGid(country?.code) ?? FALLBACK_FLAG;
+};
+
+const DiplomacyRow = ({ chat, defaultOpen = false }) => {
+    const [open, setOpen] = useState(defaultOpen);
+    const opener = (chat?.messages ?? [])[0];
+    if (!opener || !opener.text) return null;
+    const flag = flagForSpeaker(chat, opener);
+    const speaker = opener.speaker || (chat?.countries ?? [])[0]?.name || "";
+    const title = chat?.title || "";
+    return (
+        <div
+        style={{
+            background: "rgba(96,165,250,0.06)",
+            border: "1px solid rgba(96,165,250,0.16)",
+            borderRadius: "10px",
+            overflow: "hidden",
+        }}
+        >
+        <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            style={{
+                alignItems: "center",
+                background: "none",
+                border: "none",
+                color: "rgba(226,232,240,0.9)",
+                cursor: "pointer",
+                display: "flex",
+                gap: "0.5rem",
+                padding: "0.5rem 0.7rem",
+                textAlign: "left",
+                width: "100%",
+            }}
+        >
+            <span style={{ flexShrink: 0, fontSize: "0.95rem", lineHeight: 1 }}>{flag}</span>
+            <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: "0.08rem", minWidth: 0 }}>
+            <span style={{ fontSize: "0.76rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {speaker}
+            </span>
+            {title && (
+                <span style={{ fontSize: "0.69rem", color: "rgba(148,163,184,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {title}
+                </span>
+            )}
+            </span>
+            <ChevronDownIcon />
+        </button>
+        {open && (
+            <div
+            className="timeline-markdown"
+            style={{
+                borderTop: "1px solid rgba(96,165,250,0.16)",
+                color: "rgba(221,228,240,0.82)",
+                fontSize: "0.77rem",
+                lineHeight: "1.55",
+                padding: "0.6rem 0.75rem 0.7rem",
+            }}
+            >
+            <ReactMarkdown>{opener.text}</ReactMarkdown>
+            </div>
+        )}
+        </div>
+    );
+};
+
+const EventDiplomacyDropdown = ({ event, lookups }) => {
+    const chatsByEventId = lookups?.chatsByEventId;
+    const chats = chatsByEventId && typeof chatsByEventId.get === "function"
+        ? (chatsByEventId.get(event?.id) || [])
+        : [];
+    if (chats.length === 0) return null;
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+        {chats.map((chat) => (
+            <DiplomacyRow key={chat?.id || chat?.title} chat={chat} />
+        ))}
+        </div>
+    );
+};
+
 const EventCard = ({ event, footer = null, lookups }) => {
     const tags = collectEventTags(event, lookups);
     const mapChangeCount = getEventMapChangeCount(event);
+    const locationLabel = resolveEventLocationLabel(event, lookups);
 
     return (
         <div
@@ -673,6 +837,23 @@ const EventCard = ({ event, footer = null, lookups }) => {
             <MetricPill tone="accent">Fallback</MetricPill>
         )}
         </div>
+        {locationLabel && (
+            <span
+            style={{
+                color: "rgba(191,219,254,0.9)",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textAlign: "right",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "55%",
+            }}
+            >
+            {locationLabel}
+            </span>
+        )}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem", padding: "0.95rem 1rem 1rem" }}>
@@ -693,6 +874,8 @@ const EventCard = ({ event, footer = null, lookups }) => {
             <ReactMarkdown>{event.description}</ReactMarkdown>
             </div>
         )}
+
+        <EventDiplomacyDropdown event={event} lookups={lookups} />
 
         {footer}
         </div>
@@ -726,12 +909,38 @@ const PanelChrome = ({
     children,
     eyebrow,
     isOpen,
+    panelId,
     subtitle,
     title,
     topOffset,
     onClose,
 }) => {
     const hasHeaderText = Boolean(eyebrow || title || subtitle);
+    const isMobile = useIsMobile();
+
+    // Mobile keeps the legacy bottom-anchored panel; desktop wraps the body in
+    // a draggable/resizable FloatPanel (its header carries title/subtitle).
+    if (!isMobile) {
+        return (
+            <FloatPanel
+                panelId={panelId}
+                title={title || eyebrow}
+                subtitle={subtitle}
+                isOpen={isOpen}
+                onClose={onClose}
+                initialW={420}
+                initialH={520}
+                minW={320}
+                minH={360}
+                zIndex={9998}
+                hideWhenClosed={true}
+            >
+                <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "0.85rem", minHeight: 0, overflowY: "auto", padding: "0.95rem 1.25rem 1.25rem", scrollbarWidth: "none" }}>
+                    {children}
+                </div>
+            </FloatPanel>
+        );
+    }
 
     return (
         <div
@@ -892,6 +1101,7 @@ const TimelineSkipPanel = ({
         eyebrow=""
         isOpen={isOpen}
         onClose={onClose}
+        panelId="timeline-skip"
         title="Timeline"
         topOffset={topOffset}
         >
@@ -1150,6 +1360,7 @@ const TimelineHistoryPanel = ({
         eyebrow=""
         isOpen={isOpen}
         onClose={onClose}
+        panelId="timeline-history"
         subtitle={record?.rangeLabel || ""}
         title="Events"
         topOffset={topOffset}
@@ -1233,6 +1444,7 @@ const DateWidget = ({
 }) => {
     const [gameData, setGameData] = useState(null);
     const [events, setEvents] = useState([]);
+    const [chats, setChats] = useState([]);
     const [worldState, setWorldState] = useState(null);
     const [countryBounds, setCountryBounds] = useState(new Map());
     const [polityLookup, setPolityLookup] = useState(new Map());
@@ -1299,9 +1511,10 @@ const DateWidget = ({
 
         const loadState = async () => {
             try {
-                const [game, nextEvents, world] = await Promise.all([
+                const [game, nextEvents, nextChats, world] = await Promise.all([
                     readGameData({ force: true }),
                                                                     readEventsState({ force: true }),
+                                                                    readChatsState({ force: true }),
                                                                     readWorldState({ force: true }),
                 ]);
 
@@ -1323,6 +1536,7 @@ const DateWidget = ({
 
                 setGameData(game);
                 setEvents(nextEvents);
+                setChats(nextChats);
                 setWorldState(world);
             } catch (loadError) {
                 if (!cancelled) {
@@ -1406,6 +1620,7 @@ const DateWidget = ({
             : await simulateTimelineJump({ days, signal: controller.signal });
             setGameData(result.game);
             setEvents(result.events);
+            setChats(result.chats ?? []);
             setWorldState(result.world);
             setVisibleEventCount(1);
             if (result.generation?.source === "fallback") {
@@ -1455,6 +1670,7 @@ const DateWidget = ({
             if (result) {
                 setGameData(result.bundle.game);
                 setEvents(result.bundle.events);
+                setChats(result.bundle.chats ?? []);
                 setWorldState(result.bundle.world);
                 setVisibleEventCount(1);
                 setUndoCount(result.remaining);
@@ -1469,7 +1685,11 @@ const DateWidget = ({
     };
 
     const eventLookup = useMemo(() => buildEventLookup(events), [events]);
-    const lookups = useMemo(() => ({ polityLookup, regionLookup }), [polityLookup, regionLookup]);
+    const chatsByEventId = useMemo(() => buildChatsByEventId(chats), [chats]);
+    const lookups = useMemo(
+        () => ({ polityLookup, regionLookup, chatsByEventId }),
+        [polityLookup, regionLookup, chatsByEventId],
+    );
 
     const historyRecords = useMemo(() => {
         const rawHistory = worldState?.simulationHistory ?? [];
@@ -1535,6 +1755,126 @@ const DateWidget = ({
         const bounds = deriveEventFocusBounds(activeVisibleEvent, { countryBounds, regionBounds, polityLookup });
         focusMapOnBounds(mapRef, bounds);
     }, [activeVisibleEvent, countryBounds, disableEventCamera, mapRef, polityLookup, regionBounds]);
+
+    // ---- Move trail (Chantier 2) -------------------------------------------
+    // When the active event moves a unit, draw a short GeoJSON line from its
+    // pre-move position (in the staged base world) to the new destination and
+    // animate it over ~1.5 s. The source/layer are added imperatively to the
+    // map instance and torn down on cleanup so nothing accumulates.
+    useEffect(() => {
+        if (!activeVisibleEvent || disableEventCamera) {
+            return undefined;
+        }
+        const moveOps = (activeVisibleEvent.impacts?.unitOps ?? []).filter(
+            (op) => op?.op === "move" && Number.isFinite(op.toLng) && Number.isFinite(op.toLat) && op.unitId,
+        );
+        if (moveOps.length === 0) {
+            return undefined;
+        }
+        const map = getMapInstance(mapRef);
+        if (!map || typeof map.addSource !== "function") {
+            return undefined;
+        }
+
+        // Start each trail at the unit's position in the staged base (pre-move),
+        // falling back to the staged world's final unit list if no base is loaded.
+        const baseUnits = (stagedBase.world && Array.isArray(stagedBase.world.units))
+            ? stagedBase.world.units
+            : [];
+
+        const trails = moveOps.map((op) => {
+            const prior = baseUnits.find((u) => u.id === op.unitId);
+            const fromLng = Number(prior?.lng);
+            const fromLat = Number(prior?.lat);
+            if (!Number.isFinite(fromLng) || !Number.isFinite(fromLat)) return null;
+            return {
+                from: [fromLng, fromLat],
+                to: [Number(op.toLng), Number(op.toLat)],
+            };
+        }).filter(Boolean);
+
+        if (trails.length === 0) {
+            return undefined;
+        }
+
+        const SOURCE_ID = "oh-event-move-trail";
+        const LAYER_ID = "oh-event-move-trail-line";
+        const ensureSource = () => {
+            if (!map.getSource(SOURCE_ID)) {
+                map.addSource(SOURCE_ID, {
+                    type: "geojson",
+                    data: { type: "FeatureCollection", features: [] },
+                });
+            }
+            if (!map.getLayer(LAYER_ID)) {
+                map.addLayer({
+                    id: LAYER_ID,
+                    type: "line",
+                    source: SOURCE_ID,
+                    paint: {
+                        "line-color": "#ffd24a",
+                        "line-width": 2.5,
+                        "line-opacity": 0.85,
+                        "line-dasharray": [2, 1.5],
+                    },
+                    layout: { "line-cap": "round", "line-join": "round" },
+                });
+            }
+        };
+
+        // Wait for the map's style to be ready before adding source/layer.
+        const begin = () => {
+            ensureSource();
+            const source = map.getSource(SOURCE_ID);
+            if (!source || typeof source.setData !== "function") return;
+
+            const startedAt = performance.now();
+            const DURATION = 1500;
+            let raf = 0;
+            const tick = (now) => {
+                const t = Math.min(1, (now - startedAt) / DURATION);
+                const eased = t * (2 - t); // easeOutQuad
+                const features = trails.map((trail) => {
+                    const lng = trail.from[0] + (trail.to[0] - trail.from[0]) * eased;
+                    const lat = trail.from[1] + (trail.to[1] - trail.from[1]) * eased;
+                    return {
+                        type: "Feature",
+                        geometry: { type: "LineString", coordinates: [trail.from, [lng, lat]] },
+                    };
+                });
+                source.setData({ type: "FeatureCollection", features });
+                if (t < 1) {
+                    raf = requestAnimationFrame(tick);
+                }
+            };
+            raf = requestAnimationFrame(tick);
+            return () => cancelAnimationFrame(raf);
+        };
+
+        let cleanupRaf = () => {};
+        let removed = false;
+        const teardown = () => {
+            cleanupRaf();
+            removed = true;
+            if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
+            if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+        };
+
+        if (map.isStyleLoaded()) {
+            cleanupRaf = begin() || cleanupRaf;
+        } else {
+            const onStyle = () => {
+                if (removed) return;
+                cleanupRaf = begin() || cleanupRaf;
+            };
+            map.once("style.load", onStyle);
+            return () => {
+                map.off("style.load", onStyle);
+                teardown();
+            };
+        }
+        return teardown;
+    }, [activeVisibleEvent, disableEventCamera, mapRef, stagedBase]);
 
     const revealNextEvent = () => {
         setVisibleEventCount((current) => {

@@ -152,6 +152,54 @@ const Search = memo(({ mapRef }) => {
   const debounceRef = useRef(null);
   const searchAbortRef = useRef(null);
 
+  // On desktop the expanded search box can be dragged to a new spot (drag-only;
+  // no resize — it is a search bar, not a panel window). Position is remembered in
+  // localStorage and reset whenever the box is collapsed. Mobile stays anchored.
+  const SEARCH_DRAG_KEY = "oh-search-dragpos";
+  const [dragOffset, setDragOffset] = useState(null); // {x,y} screen offset once expanded+dragged
+  const dragOriginRef = useRef(null);
+  const dragScreenRef = useRef(null);
+  const readStoredDrag = () => {
+    if (isMobile) return null;
+    try {
+      const raw = localStorage.getItem(SEARCH_DRAG_KEY);
+      if (!raw) return null;
+      const pos = JSON.parse(raw);
+      if (!pos || typeof pos !== "object" || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) return null;
+      return pos;
+    } catch { return null; }
+  };
+  useEffect(() => {
+    if (!expanded) { setDragOffset(null); }
+    else if (dragOffset === null) { setDragOffset(readStoredDrag()); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded, isMobile]);
+  const onDragPointerDown = (event) => {
+    if (isMobile || !expanded || event.button !== 0) return;
+    // Only treat as drag when the pointer starts on the grab handle (the input row
+    // rim), not on buttons — those keep click behavior.
+    event.preventDefault();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startOffset = dragOffset || { x: 0, y: 0 };
+    dragScreenRef.current = { x: startX, y: startY };
+    dragOriginRef.current = startOffset;
+    const controller = new AbortController();
+    const move = (ev) => {
+      const next = { x: startOffset.x + (ev.clientX - startX), y: Math.max(-200, startOffset.y + (ev.clientY - startY)) };
+      setDragOffset(next);
+    };
+    const up = () => {
+      controller.abort();
+      setDragOffset((cur) => {
+        if (cur) try { localStorage.setItem(SEARCH_DRAG_KEY, JSON.stringify(cur)); } catch { /* ignore */ }
+        return cur;
+      });
+    };
+    window.addEventListener("pointermove", move, { signal: controller.signal });
+    window.addEventListener("pointerup", up, { signal: controller.signal });
+  };
+
   useEffect(() => {
     if (expanded && inputRef.current) {
       inputRef.current.focus();
@@ -269,21 +317,23 @@ const Search = memo(({ mapRef }) => {
 
   const hasSuggestions = expanded && suggestions.length > 0;
 
+  const dragged = expanded && !isMobile && dragOffset && (dragOffset.x !== 0 || dragOffset.y !== 0);
   return (
     <div
       style={{
         position: "fixed",
         // Desktop: sits right of the bottom toolbar and expands rightward.
         // Phones: the expanded box wouldn't fit there, so it opens as a
-        // full-width bar just above the toolbar instead.
-        bottom: expanded && isMobile ? "5rem" : "1rem",
-        // Clear of the bottom toolbar (0.5rem + 8.75rem wide).
-        left: expanded && isMobile ? "0.5rem" : "9.75rem",
+        // full-width bar just above the toolbar instead. Drag (desktop) shifts
+        // the box by the remembered offset.
+        bottom: dragged ? undefined : expanded && isMobile ? "5rem" : "1rem",
+        top: dragged ? `calc(100vh - 4rem + ${dragOffset.y}px)` : undefined,
+        left: dragged ? `calc(9.75rem + ${dragOffset.x}px)` : expanded && isMobile ? "0.5rem" : "9.75rem",
         height: "3rem",
         width: expanded ? (isMobile ? "calc(100vw - 1rem)" : "17rem") : "3rem",
         overflow: "visible",
-        transition: "width 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-        cursor: expanded ? "default" : "pointer",
+        transition: dragged ? "none" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        cursor: expanded ? (dragged ? "grab" : "default") : "pointer",
         display: "flex",
         alignItems: "center",
         zIndex: 9999,
@@ -297,6 +347,21 @@ const Search = memo(({ mapRef }) => {
       }}
       onClick={!expanded ? () => setExpanded(true) : undefined}
     >
+      {expanded && !isMobile && (
+        <div
+          onPointerDown={onDragPointerDown}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: "-1px",
+            left: "-1px",
+            right: "-1px",
+            height: "0.5rem",
+            cursor: dragOffset && (dragOffset.x !== 0 || dragOffset.y !== 0) ? "grab" : "grab",
+            zIndex: 2,
+          }}
+        />
+      )}
       <div
         style={{
           display: "flex",

@@ -13,6 +13,8 @@ import {
 } from "../../runtime/assets.js";
 import { flagEmojiFromGid } from "../../runtime/countryFlags.js";
 import { readChatsState, writeChatsState } from "../../runtime/gameState.js";
+import FloatPanel from "./FloatPanel.jsx";
+import { useIsMobile } from "../../runtime/useIsMobile.js";
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 
@@ -767,6 +769,7 @@ export const requestDiplomaticChat = (country) => {
 };
 
 const ChatPanel = ({ isOpen, onClose, requestedCountry, onConsumeRequest }) => {
+    const isMobile = useIsMobile();
     const [countries, setCountries]               = useState([]);
     const [loadingCountries, setLoadingCountries] = useState(true);
     const [playerCountry, setPlayerCountry]       = useState("your nation");
@@ -947,11 +950,8 @@ const ChatPanel = ({ isOpen, onClose, requestedCountry, onConsumeRequest }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, requestedCountry]);
 
-        return (
+        const panelBody = (
             <>
-            <MarkdownStyleInjector />
-            <div style={{ position: "fixed", bottom: isOpen ? "4.25rem" : "-40rem", left: "0rem", width: "26.25rem", maxWidth: "calc(100vw - 1rem)", height: "min(calc(100vh - 9rem), max(calc(100vh - 33rem), 30rem))", minHeight: "10rem", backgroundColor: "rgba(17,24,39,0.95)", backdropFilter: "blur(8px)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "-4px 0 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06)", zIndex: 9998, overflow: "hidden", transition: "bottom 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease", opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none", fontFamily: "sans-serif", color: "white", display: "flex", flexDirection: "column" }}>
-
             {showSelector && <CountrySelectorModal countries={availableCountries} loading={loadingCountries} onStart={handleStartChat} onCancel={() => setShowSelector(false)} />}
 
             {activeChat && Array.isArray(activeChat.countries) && activeChat.countries.length > 0 ? (
@@ -978,7 +978,34 @@ const ChatPanel = ({ isOpen, onClose, requestedCountry, onConsumeRequest }) => {
                 </div>
                 </>
             )}
-            </div>
+            </>
+        );
+
+        return (
+            <>
+            <MarkdownStyleInjector />
+            {isMobile ? (
+                <div style={{ position: "fixed", bottom: isOpen ? "4.25rem" : "-40rem", left: "0rem", width: "26.25rem", maxWidth: "calc(100vw - 1rem)", height: "min(calc(100vh - 9rem), max(calc(100vh - 33rem), 30rem))", minHeight: "10rem", backgroundColor: "rgba(17,24,39,0.95)", backdropFilter: "blur(8px)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "-4px 0 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06)", zIndex: 9998, overflow: "hidden", transition: "bottom 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease", opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none", fontFamily: "sans-serif", color: "white", display: "flex", flexDirection: "column" }}>
+                {panelBody}
+                </div>
+            ) : (
+                <FloatPanel
+                    panelId="chat"
+                    title={activeChat ? null : "Diplomatic Chats"}
+                    isOpen={isOpen}
+                    onClose={activeChat ? undefined : onClose}
+                    initialW={26.25 * 16}
+                    initialH={520}
+                    minW={320}
+                    minH={360}
+                    zIndex={9998}
+                    hideWhenClosed={true}
+                >
+                    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                        {panelBody}
+                    </div>
+                </FloatPanel>
+            )}
             </>
         );
 };

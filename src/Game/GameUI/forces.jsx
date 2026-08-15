@@ -11,6 +11,8 @@ import {
 } from "../Map/unitsController.js";
 import { UNIT_TYPES } from "../../runtime/gameState.js";
 import { ensurePolityNames, polityDisplayName } from "../../runtime/polityNames.js";
+import { useIsMobile } from "../../runtime/useIsMobile.js";
+import { FloatPanel } from "./FloatPanel.jsx";
 
 const TYPE_LABEL = {
   infantry: "Infantry",
@@ -93,6 +95,7 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
   const [deployType, setDeployType] = useState("infantry");
   const [deployStrength, setDeployStrength] = useState(100);
   const [deployName, setDeployName] = useState("");
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const unsubscribe = subscribeUnits(() => {
@@ -142,6 +145,77 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
     setOpen(false);
   };
 
+  // Shared panel body: mobile renders it inside the legacy fixed box (with the
+  // Forces header), desktop renders it inside FloatPanel (which draws the header).
+  const panelBody = (
+    <>
+      {/* Deploy controls */}
+      <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px", padding: "8px", marginBottom: "10px" }}>
+        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", marginBottom: "6px" }}>Deploy a unit</div>
+        <div style={{ display: "flex", gap: "5px", marginBottom: "6px" }}>
+          <select
+            value={deployType}
+            onChange={(e) => setDeployType(e.target.value)}
+            style={{ flex: 1, background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px" }}
+          >
+            {availableTypes.map((t) => (
+              <option key={t} value={t} style={{ color: "black" }}>
+                {TYPE_LABEL[t] ?? t}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={1}
+            max={1000}
+            value={deployStrength}
+            onChange={(e) => setDeployStrength(e.target.value)}
+            title="Strength"
+            style={{ width: "4rem", background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px" }}
+          />
+        </div>
+        <input
+          type="text"
+          value={deployName}
+          placeholder="Unit name (optional)"
+          onChange={(e) => setDeployName(e.target.value)}
+          style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px", marginBottom: "6px" }}
+        />
+        <button
+          onClick={startDeploy}
+          style={{ width: "100%", background: "rgba(59,130,246,0.35)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "6px 0" }}
+        >
+          Place on map →
+        </button>
+      </div>
+
+      <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
+        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", margin: "0 0 5px" }}>
+          Your units ({myUnits.length})
+        </div>
+        {myUnits.length === 0 && (
+          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginBottom: "8px" }}>
+            None yet — deploy a unit above, or jump time to let the war unfold.
+          </div>
+        )}
+        {myUnits.map((u) => (
+          <UnitRow key={u.id} unit={u} onClick={() => flyTo(u)} />
+        ))}
+
+        {otherUnits.length > 0 && (
+          <>
+            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", margin: "8px 0 5px" }}>
+              Other forces ({otherUnits.length})
+            </div>
+            {otherUnits.map((u) => (
+              <UnitRow key={u.id} unit={u} dimmed onClick={() => flyTo(u)} />
+            ))}
+          </>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <>
       {/* Mode banner — global instruction while deploying / moving / attacking. */}
@@ -179,7 +253,7 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
         </div>
       )}
 
-      {open && (
+      {open && (isMobile ? (
         <div
           style={{
             ...surface,
@@ -203,73 +277,26 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
               ✕
             </button>
           </div>
-
-          {/* Deploy controls */}
-          <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px", padding: "8px", marginBottom: "10px" }}>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", marginBottom: "6px" }}>Deploy a unit</div>
-            <div style={{ display: "flex", gap: "5px", marginBottom: "6px" }}>
-              <select
-                value={deployType}
-                onChange={(e) => setDeployType(e.target.value)}
-                style={{ flex: 1, background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px" }}
-              >
-                {availableTypes.map((t) => (
-                  <option key={t} value={t} style={{ color: "black" }}>
-                    {TYPE_LABEL[t] ?? t}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={1}
-                max={1000}
-                value={deployStrength}
-                onChange={(e) => setDeployStrength(e.target.value)}
-                title="Strength"
-                style={{ width: "4rem", background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px" }}
-              />
-            </div>
-            <input
-              type="text"
-              value={deployName}
-              placeholder="Unit name (optional)"
-              onChange={(e) => setDeployName(e.target.value)}
-              style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px", marginBottom: "6px" }}
-            />
-            <button
-              onClick={startDeploy}
-              style={{ width: "100%", background: "rgba(59,130,246,0.35)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "6px 0" }}
-            >
-              Place on map →
-            </button>
-          </div>
-
-          <div style={{ overflowY: "auto", flex: 1 }}>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", margin: "0 0 5px" }}>
-              Your units ({myUnits.length})
-            </div>
-            {myUnits.length === 0 && (
-              <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginBottom: "8px" }}>
-                None yet — deploy a unit above, or jump time to let the war unfold.
-              </div>
-            )}
-            {myUnits.map((u) => (
-              <UnitRow key={u.id} unit={u} onClick={() => flyTo(u)} />
-            ))}
-
-            {otherUnits.length > 0 && (
-              <>
-                <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", margin: "8px 0 5px" }}>
-                  Other forces ({otherUnits.length})
-                </div>
-                {otherUnits.map((u) => (
-                  <UnitRow key={u.id} unit={u} dimmed onClick={() => flyTo(u)} />
-                ))}
-              </>
-            )}
-          </div>
+          {panelBody}
         </div>
-      )}
+      ) : (
+        <FloatPanel
+          panelId="forces"
+          title="Forces"
+          isOpen={open}
+          onClose={() => setOpen(false)}
+          initialW={288}
+          initialH={480}
+          minW={260}
+          minH={320}
+          zIndex={9999}
+          hideWhenClosed={false}
+        >
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, padding: "12px", overflow: "hidden" }}>
+            {panelBody}
+          </div>
+        </FloatPanel>
+      ))}
     </>
   );
 };
