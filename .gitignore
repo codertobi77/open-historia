@@ -53,3 +53,4 @@ CLAUDE.md
 /trust/*.key.pem
 # generated per release build by the desktop workflow
 electron/build-id.json
+.vercel
