@@ -19,7 +19,7 @@
 // here rather than in the store.
 
 import COUNTRY_NAMES from "../runtime/generated/countryNames.js";
-import { OWNER_SCHEMA, rekeyOwnerMap } from "../../server/ownerMigration.js";
+import { OWNER_SCHEMA, rekeyOwnerMap } from "../runtime/shared/ownerMigration.js";
 
 export { OWNER_SCHEMA };
 

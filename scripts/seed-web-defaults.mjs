@@ -1,15 +1,14 @@
 /*! Open Historia — web-mode default-scenario seed generator © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
-// Bundles the built-in "default" scenario (server/data/scenarios/default) into a
+// Bundles the built-in "default" scenario (data/scenarios/default) into a
 // single JS module the WEB build imports so a fresh browser can seed its
-// IndexedDB library with a playable scenario. Runs only from `npm run build:web`
-// (and dev:web); the output dir is git-ignored and is never imported by the
-// local build, so no seed data ships in the downloaded app.
+// IndexedDB library with a playable scenario. Runs only from `bun run build:web`
+// (and dev:web); the output dir is git-ignored.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
-const SRC = path.join(ROOT, "server", "data", "scenarios", "default");
+const SRC = path.join(ROOT, "data", "scenarios", "default");
 const OUT_DIR = path.join(ROOT, "src", "runtime", "web", "generated");
 const OUT_FILE = path.join(OUT_DIR, "defaultScenario.js");
 const COUNTRY_NAMES_OUT = path.join(OUT_DIR, "countryNames.js");
@@ -51,9 +50,9 @@ const seed = {
 };
 
 // The canonical country registry (code -> name) used by the runtime write path's
-// canonicalizeCountryRef, mirroring server/country-names.json.
+// canonicalizeCountryRef, mirroring data/country-names.json.
 const countryNames = (() => {
-  const file = path.join(ROOT, "server", "country-names.json");
+  const file = path.join(ROOT, "data", "country-names.json");
   if (!existsSync(file)) return {};
   try {
     return JSON.parse(readFileSync(file, "utf8"));
@@ -74,10 +73,9 @@ writeFileSync(
   "utf8",
 );
 
-// The app-level default palette the server serves as the colors fallback for a
-// scenario that ships no colors of its own (server COLORS_ASSET_CANDIDATES =
-// public/assets/colors.json). Bundled separately so the fallback is immutable
-// and scenario-independent, matching the server.
+// The app-level default palette used as the colors fallback for a scenario that
+// ships no colors of its own (public/assets/colors.json). Bundled separately so
+// the fallback is immutable and scenario-independent.
 const fallbackColors = (() => {
   const file = path.join(ROOT, "public", "assets", "colors.json");
   if (!existsSync(file)) return {};

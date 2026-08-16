@@ -8,8 +8,9 @@ import {
   parseUpdateManifest,
 } from "./appUpdate.js";
 
-// Stamped into the native app build by the APK workflow (VITE_APP_BUILD / _TRACK).
-// Desktop and dev builds have no stamp, so the banner is a no-op there.
+// Stamped into a native app build by its build workflow (VITE_APP_BUILD / _TRACK).
+// This repo ships only the web build, which has no such stamp, so the native branch
+// stays dormant; that path is kept for a self-hosted native install that stamps it.
 const APP_BUILD = Number(import.meta.env.VITE_APP_BUILD);
 const APP_TRACK = String(import.meta.env.VITE_APP_TRACK || "stable");
 // Stamped into the WEB build by vite.config (WEB_BUILD_ID), which writes the same id

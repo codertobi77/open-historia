@@ -14,11 +14,11 @@ import { readFileSync, writeFileSync, existsSync, copyFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import COUNTRY_NAMES from "../src/runtime/generated/countryNames.js";
-import { OWNER_SCHEMA } from "../server/ownerMigration.js";
+import { OWNER_SCHEMA } from "../src/runtime/shared/ownerMigration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const SCENARIO_DIR = path.join(PROJECT_ROOT, "server", "data", "scenarios", "default");
+const SCENARIO_DIR = path.join(PROJECT_ROOT, "data", "scenarios", "default");
 const SEED_PATH = path.join(PROJECT_ROOT, "public", "assets", "regions-seed.geojson");
 const BASE_COLORS_PATH = path.join(PROJECT_ROOT, "public", "assets", "colors.json");
 

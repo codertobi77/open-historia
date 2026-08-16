@@ -566,7 +566,7 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
             // if it allows this origin — otherwise the browser silently drops the reply.
             // Say so up front here rather than letting it surface as "Failed to fetch".
             helperText={import.meta.env.VITE_OH_WEB
-                ? "Base URL that exposes /chat/completions and /models. A server on your own machine (Ollama, LM Studio) also has to allow this site: start Ollama with OLLAMA_ORIGINS set to this site's address, or use the desktop app."
+                ? "Base URL that exposes /chat/completions and /models. A server on your own machine (Ollama, LM Studio) also has to allow this site: start Ollama with OLLAMA_ORIGINS set to this site's address."
                 : "Base URL that exposes /chat/completions and /models."}
             />
             <SettingsInput

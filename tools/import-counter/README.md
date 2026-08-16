@@ -1,10 +1,11 @@
 # Scenario import counter
 
 A tiny Cloudflare Worker that counts how many people import each community
-scenario. The game server pings it once per install on a successful import (see
-`server/server.js` → `/api/hub/import-log`), so you get real import numbers even
-for scenarios GitHub can't count (issue attachments), deduped so one person
-re-importing doesn't inflate the total.
+scenario. The game pings it once per install on a successful import (the web
+router forwards `/api/hub/import-log` to the registry Worker, which forwards it
+here), so you get real import numbers even for scenarios GitHub can't count
+(issue attachments), deduped so one person re-importing doesn't inflate the
+total.
 
 Dedup is server-side, per scenario:
 - **Website** (import forwarded by the registry Worker): once per **account _and_
@@ -40,9 +41,11 @@ plan, no server to keep alive.
    ```
    Wrangler prints the Worker URL, e.g. `https://oh-import-counter.<your-subdomain>.workers.dev`.
 
-4. **Point the app at it.** Set the URL as the game server's `OH_IMPORT_COUNTER_URL`
-   environment variable, **or** send it to me and I'll bake it in as the default
-   so every player's app reports to it. Until this is set, the import ping is a
+4. **Point the registry Worker at it.** The web build never talks to this
+   Worker directly — it POSTs `/api/hub/import-log` to the registry Worker
+   (`VITE_OH_HUB_URL`), which forwards here. So wire this Worker's URL into the
+   registry Worker's config (in the separate admin repo), **or** send it to me
+   and I'll bake it in as the default. Until this is set, the import ping is a
    silent no-op (nothing breaks).
 
 ## Viewing the numbers
@@ -58,7 +61,7 @@ scenario posted as issue #42.
 - Counts live in each KV key's metadata, so `/counts` is a single list call and
   stays inside the free-tier subrequest limit.
 - This is an anonymous counter: like any client-side metric it *can* be inflated
-  by someone calling `/hit` directly. The per-install dedupe on the game server
+  by someone calling `/hit` directly. The per-scenario dedupe in this Worker
   handles ordinary repeat-imports; treat the numbers as "roughly how many people
   imported," not audited figures. If you later want stronger guarantees, the
   Worker is the place to add a shared secret or rate limiting.

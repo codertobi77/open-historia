@@ -1,7 +1,8 @@
 /*! Open Historia — web-mode store utilities © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
-// Shared helpers for the web-mode store handlers. Mirrors the small utilities in
-// server/libraryStore.js / mapEditorStore.js / basemapStore.js so the browser
-// port produces byte-compatible ids, hashes and response envelopes.
+// Shared helpers for the web-mode store handlers (libraryStore / mapEditorStore /
+// basemapStore in this folder). They existed historically as the browser port of a
+// now-removed Express server and still produce byte-compatible ids, hashes and
+// response envelopes so exported data stays stable across builds.
 
 export const cloneJson = (value) => {
   if (value == null) return value;
@@ -17,9 +18,9 @@ export const cloneJson = (value) => {
 
 export const nowIso = () => new Date().toISOString();
 
-// Matches normalizeId in server/libraryStore.js:316 (prefix form) and
-// mapEditorStore.js:38 (48-char slug). `maxLen` defaults to unlimited to match
-// the library store; pass 48 for the map editor.
+// Historical normalizeId: prefix form for the library store, 48-char slug for
+// the map editor. `maxLen` defaults to unlimited to match the library store;
+// pass 48 for the map editor.
 export const normalizeId = (value, prefix = "item", maxLen = 0) => {
   let slug = String(value ?? "")
     .trim()
@@ -43,8 +44,8 @@ export const ensureUniqueId = async (requestedId, exists) => {
   return candidate;
 };
 
-// SHA-256 hex of a string — identical to sha256Hex in basemapLibrary.js:43 and
-// hashPayload in basemapStore.js so local + community dedup stays consistent.
+// SHA-256 hex of a string — matches basemapLibrary.js's sha256Hex / basemapStore's
+// hashPayload so local + community dedup stays consistent.
 export const sha256Hex = async (str) => {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(str)));
   return Array.from(new Uint8Array(buf))
@@ -64,10 +65,9 @@ export const jsonResponse = (data, status = 200, headers = {}) =>
 export const errorResponse = (message, status = 400) =>
   jsonResponse({ error: String(message ?? "Request failed") }, status);
 
-// Serve bytes with HTTP Range support, mirroring streamBinaryFile
-// (server/server.js:122) + parseByteRange (server/security.js:59) so the
-// PMTiles protocol and <img>/range consumers behave the same as against the
-// real server.
+// Serve bytes with HTTP Range support so the PMTiles protocol and <img>/range
+// consumers behave the same as they did against the original Express server
+// (streamBinaryFile + parseByteRange).
 export const binaryResponse = (bytes, contentType, rangeHeader) => {
   const buffer = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes;
   const total = buffer.byteLength;
@@ -122,10 +122,9 @@ const unsatisfiable = (total) =>
     headers: { "Accept-Ranges": "bytes", "Content-Range": `bytes */${total}`, "Cache-Control": "no-store" },
   });
 
-// colors/geojson may be stored as a parsed object (seed/export) OR as the raw
-// uploaded text (server stores upload bytes verbatim and never validates). These
-// normalize both, mirroring the server's readJsonFile (parse-with-fallback) and
-// byte-faithful streaming.
+// colors/geojson may be stored as a parsed object (from seed/export) OR as raw
+// uploaded text (bytes stored verbatim, never validated). These normalize both
+// with a parse-with-fallback read and byte-faithful streaming.
 export const parseJsonValue = (value, fallback) => {
   if (typeof value === "string") {
     try {

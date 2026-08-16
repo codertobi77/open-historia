@@ -1,14 +1,14 @@
 # Contributing & Conventions
 
-Open Historia is an open-source, community-driven alternative to Pax Historia: a React + Vite client, an Express server (`server/server.js`), a vector map editor, and a small fleet of build/release scripts. This page is the practical orientation for a new contributor — where the code lives, how it flows to players through the release channels, how to run and test it locally, the commit/style rules the maintainer enforces, and the handful of identifiers and data-hosting rules you must **not** break. There is no `CONTRIBUTING.md` in the repo; this doc is the closest thing, distilled from `README.md`, `package.json`, `.github/workflows/`, the license banners in the source, and `.gitattributes`/`.gitignore`.
+Open Historia is an open-source, community-driven alternative to Pax Historia: a React + Vite **web** client, a vector map editor, and a small fleet of build/release scripts. There is **one build variant**: the web build, produced by `bun run build:site` and deployed via Vercel. The web "backend" is a browser `window.fetch` interceptor (`src/runtime/web/router.js`) that routes same-origin `/api/*` calls to IndexedDB-backed store handlers — there is no Express server, no Electron app, no Android APK, and no GitHub Actions CI anymore. The package manager is **bun** (`bun.lock` is the lockfile, gitignored; `package.json` declares `"packageManager": "bun@1.3.14"`). This page is the practical orientation for a new contributor — where the code lives, how it deploys to openhistoria.com, how to run and test it locally, the commit/style rules the maintainer enforces, and the handful of identifiers and data-hosting rules you must **not** break. There is no `CONTRIBUTING.md` in the repo; this doc is the closest thing, distilled from `README.md`, `package.json`, `vercel.json`, the license banners in the source, and `.gitattributes`/`.gitignore`.
 
-For the systems these conventions govern, see [Architecture](architecture.md), [Server](server.md), [Assets & data](assets-and-data.md), and [Web build](web-build.md).
+For the systems these conventions govern, see [Architecture](architecture.md), [Web build](web-build.md), [Web runtime](web-runtime.md), [Assets & data](assets-and-data.md), and [Runtime services](runtime-services.md).
 
 ---
 
 ## 1. Repository & remote layout
 
-The canonical repo is the **`Open-Historia` GitHub org**: `Open-Historia/open-historia`. That is what `README.md` tells players to clone (`git clone https://github.com/Open-Historia/open-historia.git`) and what every workflow, license banner, and asset manifest points back to.
+The canonical repo is the **`Open-Historia` GitHub org**: `Open-Historia/open-historia`. That is what `README.md` tells players to clone (`git clone https://github.com/Open-Historia/open-historia.git`) and what every license banner and asset manifest points back to.
 
 This working clone (`work-repo`) has several remotes configured — useful to know so you push to the right place:
 
@@ -26,27 +26,20 @@ Sibling repos in the same org that the code and docs reference (not part of this
 | Repo | Purpose |
 |------|---------|
 | `Open-Historia/open-historia-node` | Community **content node** — caches/serves read-only, checksum-verified map data. |
-| `Open-Historia/open-historia-admin` | Private registry Worker (D1) + signing panel; deploys the website and node directory. |
+| `Open-Historia/open-historia-admin` | Private registry Worker (D1) + signing panel; publishes the signed node directory. |
 | `Open-Historia/Open-historia-scenarios` | The Scenario Hub — official presets + community scenarios. |
 
 ---
 
-## 2. Branches & the release channel model
+## 2. Branches & deploy model
 
-The repo ships to players through **rolling per-channel GitHub Releases**, driven entirely by which branch you push to. The workflows in `.github/workflows/` are the source of truth:
+There is **one branch that matters: `main`**. There is no release-channel topology anymore — no `main`/`beta`/`alpha` channel split, no per-channel GitHub Releases, no GitHub Actions CI. The site is the single deployable, and it ships to players via **Vercel on every merge to `main`**.
 
-| Branch | Built by | Produces |
-|--------|----------|----------|
-| `main` | `.github/workflows/app-bundle.yml` | `Open-Historia.zip` on the **`app-stable`** release (stable desktop bundle). |
-| `main` | `.github/workflows/deploy-site.yml` | Deploys **openhistoria.com** (Cloudflare Pages) via `npm run build:site`. |
-| `beta` | `.github/workflows/app-bundle.yml` | `Open-Historia.zip` on the **`app-beta`** release. |
-| (any) `mobile/**` change | `.github/workflows/android-apk.yml` | `pax-historia.apk` on the **`android`** release (run from the Actions tab, or push an `android-v*` tag). |
+- `vercel.json` (committed) sets `installCommand: "bun install"` and `buildCommand: "bun run build:site"`. Vercel detects bun automatically from `package.json`'s `"packageManager": "bun@1.3.14"` and runs `bun run build:site`, which seeds web defaults → `vite build --mode web --base /play/ --outDir dist-web` → `scripts/assemble-site.mjs` → `dist-site/` (landing page at `/`, game at `/play/`).
+- Merges to `main` are deployed automatically; there is no manual deploy button, no admin-panel deploy engine, and no Cloudflare Pages path anymore.
+- Because the 60–100 MB pmtiles archives are too large for a static site, they live on the `map-data` GitHub Release and the web build fetches them through the registry Worker's CORS+range proxy and the hash-verified content-node swarm (see [Assets & data](assets-and-data.md) and [Web build](web-build.md)).
 
-`app-bundle.yml` runs on **every push to `main` and `beta`**, so the download never goes stale (`.github/workflows/app-bundle.yml:13-15`). It picks the channel from `github.ref_name`: `main → app-stable`, else `app-beta` (`app-bundle.yml:57-68`).
-
-`deploy-site.yml` skips its build for `**.md`, `mobile/**`, and `.github/**` changes (docs/app can't change what the site serves) and refuses to deploy any file over Cloudflare Pages' 25 MiB limit (`deploy-site.yml:21-27`, `:58-68`).
-
-There is also an **`alpha`** staging branch and a large number of feature branches (typically a `feature`, `feature-alpha`, `feature-beta`, `feature-main` family per change). Feature work is developed on a topic branch, staged, then merged toward the release channels. When in doubt about the target branch for a PR, ask the maintainer rather than guessing — the channel topology (dev → alpha → beta → main) is maintainer-managed.
+Feature work happens on topic branches off `main` and lands via pull request. Don't open `beta`/`alpha`-targeted PRs — those channels no longer exist. When in doubt about the target branch, ask the maintainer.
 
 ---
 
@@ -58,7 +51,7 @@ Practical flow:
 
 1. Fork `Open-Historia/open-historia` (or branch, if you have push access).
 2. Create a topic branch off the appropriate base.
-3. Make your change; run `npm run lint` and `npm test` locally (see §7–8).
+3. Make your change; run `bun run lint` and `bun test` locally (see §7–8).
 4. Open a PR against the org repo. Describe *why*, not just *what* — the codebase's comment culture (§5) extends to PR descriptions.
 5. A maintainer merges. Do not force-push shared branches or self-merge.
 
@@ -86,7 +79,7 @@ The **file-header license banners** (§5) credit **Nicholas Krol** because they 
 
 ### License banners on source files
 
-Almost every source file (~111 across `src/`, `server/`, `scripts/`) opens with a one-line (or short block) MIT banner pointing at `src/Editor/LICENSE`. Two forms are in use:
+Almost every source file across `src/`, `scripts/`, and `tools/` opens with a one-line (or short block) MIT banner pointing at `src/Editor/LICENSE`. Two forms are in use:
 
 ```js
 /*! Open Historia — portions (short description of what this file does) © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
@@ -99,18 +92,17 @@ Almost every source file (~111 across `src/`, `server/`, `scripts/`) opens with 
  */
 ```
 
-Even config, workflows, and `.gitattributes` carry the banner (`.github/workflows/*.yml:1`, `vite.config.ts:1`, `eslint.config.js` excepted). **When you add a new file, add a banner** in the same style with a short parenthetical describing the file's role. When you edit an existing file, keep its banner.
+Even config and `.gitattributes` carry the banner (`vite.config.ts:1`, `eslint.config.js` excepted). **When you add a new file, add a banner** in the same style with a short parenthetical describing the file's role. When you edit an existing file, keep its banner.
 
-Licensing is split by directory: the map editor and its tooling — the contents of `src/Editor/`, `scripts/extract-regions.mjs`, and `server/mapEditorStore.js` — are MIT © Nicholas Krol per `src/Editor/LICENSE`; the project as a whole is MIT © "Developers of the Open-Historia Project" per the top-level `LICENSE`.
+Licensing is split by directory: the map editor and its tooling — the contents of `src/Editor/`, `scripts/extract-regions.mjs`, and `src/runtime/web/editorStore.js` — are MIT © Nicholas Krol per `src/Editor/LICENSE`; the project as a whole is MIT © "Developers of the Open-Historia Project" per the top-level `LICENSE`.
 
 ### Verbose, explanatory comments (the house style)
 
 The single most distinctive convention: **comments explain *why*, name the trap, and often cite the failure mode** — not what the next line literally does. They are frequently multi-sentence and read like short design notes. Representative examples worth imitating:
 
-- `vite.config.ts:7-23` — a full paragraph on why the pmtiles are dropped from the bundle, including that "the trap is that it only fires on a machine that has actually played."
-- `server/security.js:1-4`, `:11-14` — the banner explains *why* the helpers are split out (unit-testable without the server), and each function comment states the exact attack it blocks ("Rejects `../`, a path separator (including the `%2f` Express decodes back into `/`)…").
-- `.github/workflows/deploy-site.yml:5-15` — explains *why* CI deploys the site rather than connecting Pages to the repo, and the map-binary trap it sidesteps.
-- `server/ownerMigration.test.js:3-7` — notes fixtures are "TRANSCRIBED FROM THE REAL SHIPPED DATA, not invented."
+- `vite.config.ts` `dropMapBinaries` plugin — a full paragraph on why the pmtiles are dropped from the bundle (too large for a static-site host; nothing loads a pmtiles archive from the bundle anyway — the web build fetches them from content nodes, hash-verified).
+- `src/runtime/shared/ownerMigration.js` + its test — notes fixtures are "TRANSCRIBED FROM THE REAL SHIPPED DATA, not invented."
+- `src/runtime/web/router.js` `installWebApiRouter` — the comment block explains *why* only `window.fetch` is patched and why cover images are embedded as `data:` URLs (an `<img src>` load bypasses the interceptor and would 404 to the SPA fallback).
 
 Match this: when you write a non-obvious line, leave a comment that would stop the next person from "fixing" it back into a bug.
 
@@ -118,7 +110,7 @@ Match this: when you write a non-obvious line, leave a comment that would stop t
 
 | Tool | Config | Notes |
 |------|--------|-------|
-| ESLint 9 (flat config) | `eslint.config.js` | Runs on `**/*.{ts,tsx}` with `js.configs.recommended`, `typescript-eslint`, `react-hooks`, and `react-refresh` (Vite). `dist` is globally ignored. Run: `npm run lint`. |
+| ESLint 9 (flat config) | `eslint.config.js` | Runs on `**/*.{ts,tsx}` with `js.configs.recommended`, `typescript-eslint`, `react-hooks`, and `react-refresh` (Vite). `dist` is globally ignored. Run: `bun run lint`. |
 | TypeScript 5.9 | `tsconfig*.json` | `.ts`/`.tsx` are type-checked and linted; much of the game UI is `.jsx` (not strictly typed). Both coexist. |
 | React 19 + React Compiler | `vite.config.ts:77-82` | The build enables `babel-plugin-react-compiler`. Don't hand-write memoization that fights the compiler; follow the Rules of Hooks (react-hooks lint enforces this). |
 
@@ -126,98 +118,99 @@ Note ESLint only targets `.ts`/`.tsx` — the many `.jsx`/`.js` files are not li
 
 ### Line endings
 
-`.gitattributes` forces **LF** on `*.sh` and `*.command` — "CRLF breaks bash on Linux/macOS." Keep the launcher scripts LF; don't let an editor rewrite them to CRLF.
+`.gitattributes` forces **LF** on shell scripts (`*.sh`, `*.command`) and a few other text classes — "CRLF breaks bash on Linux/macOS." Don't let an editor rewrite them to CRLF.
 
 ---
 
 ## 6. Running the app locally
 
-Prerequisites: **Node.js 22 LTS or newer** (minimum `^20.19.0 || >=22.12.0`, enforced by `package.json:engines`; Vite 7 requires it) and Git.
+Prerequisites: **bun** (the repo's package manager; `package.json` declares `"packageManager": "bun@1.3.14"`) and Git. Node 22 LTS or newer is still required by the toolchain (`package.json:engines`, minimum `^20.19.0 || >=22.12.0`; Vite 7 needs it), but `bun install` / `bun run …` are the commands you actually type.
 
 ### First-time setup
 
 ```bash
 git clone https://github.com/Open-Historia/open-historia.git
 cd open-historia
-node scripts/fetch-map-assets.mjs   # download world-map binaries (NOT in the repo — see §10)
-npm install
+bun install
 ```
 
-### Two ways to run
+The world-map binaries (pmtiles, seed geojson/json, the default scenario's `regions.geojson`) are **not** in the repo and are **not** needed for `bun run build:site`. The web build fetches them at runtime from the `map-data` GitHub Release through the registry Worker proxy / content-node swarm, exactly like production. You only need `scripts/fetch-map-assets.mjs` if you are doing something that reads them off disk locally (see §9).
+
+### Running it
 
 **A. Production-style (matches what players get):**
 
 ```bash
-npm run build           # vite build -> dist/
-node server/server.js   # Express server on http://localhost:3000
+bun run build:site   # seeds web defaults → vite build --mode web --base /play/ → assemble-site.mjs → dist-site/
 ```
 
-Open **http://localhost:3000**. The server (`server/server.js`) serves `dist/`, exposes the `/api/*` routes (library/scenario stores, map-editor store, basemaps, flags, the AI relay, the hub proxy, and `/api/runtime/pmtiles/:assetKey` for streaming map binaries off disk), and enforces the CORS/CSRF guards in `server/security.js`. See [Server](server.md).
+Then serve `dist-site/` with any static file server (e.g. `bunx serve dist-site`, `bun run preview:web`, or the dev-time `bun run dev:web`). There is no server process to start — open the served URL in a browser and the `window.fetch` interceptor in `src/runtime/web/router.js` answers every same-origin `/api/*` call from IndexedDB, with heavy map tiles fetched over the network from the content origin. See [Web build](web-build.md) and [Web runtime](web-runtime.md).
 
-**B. Hot-reload dev (run BOTH processes):**
+**B. Hot-reload dev:**
 
 ```bash
-node server/server.js   # terminal 1 — the API/server on :3000
-npm run dev             # terminal 2 — Vite dev server (HMR)
+bun run dev:web   # seeds web defaults (scripts/seed-web-defaults.mjs) then vite --mode web (HMR)
 ```
 
-Vite proxies `/api` to `http://localhost:3000` (`vite.config.ts:86-91`), so the editor's save/load and the game's runtime endpoints work under HMR. You need the Express server running alongside `vite` — the dev server alone has no backend.
+A single process — there is no Express server to run alongside the Vite dev server anymore. The vite dev server serves the bundle; the fetch interceptor answers `/api/*` against IndexedDB in-browser, same as production.
 
-### Other run/build scripts (`package.json:scripts`)
+### Scripts (`package.json:scripts`)
 
 | Script | What it does |
 |--------|--------------|
-| `npm run dev` | Vite dev server (desktop/local mode). |
-| `npm run dev:web` | Seeds web defaults (`scripts/seed-web-defaults.mjs`) then `vite --mode web`. |
-| `npm run build` | `vite build` → `dist/` (the desktop client). |
-| `npm run build:web` | Web build → `dist-web/` (base `/`). See [Web build](web-build.md). |
-| `npm run build:site` | Web build at base `/play/` + `scripts/assemble-site.mjs` (landing page at `/`, game at `/play/`) → `dist-site/`. |
-| `npm run build:mobile-server` | `scripts/build-mobile-server.mjs` — assembles the in-process Node server the Android app embeds (nodejs-mobile). |
-| `npm run lint` | ESLint over the repo. |
-| `npm run preview` / `preview:web` | Serve a built bundle for inspection. |
+| `bun run dev` | == `dev:web`. |
+| `bun run dev:web` | Seeds web defaults (`scripts/seed-web-defaults.mjs`) then `vite --mode web` (HMR). |
+| `bun run build:web` | Web build → `dist-web/` (base `/`). See [Web build](web-build.md). |
+| `bun run build:site` | Web build at base `/play/` + `scripts/assemble-site.mjs` (landing page at `/`, game at `/play/`) → `dist-site/`. This is the script Vercel runs. |
+| `bun run lint` | ESLint over the repo. |
+| `bun run preview:web` | Serve a built web bundle for inspection. |
+| `bun test` | Run the test suite (see §7). |
 
-`--mode web` builds the browser-playable website; **any other mode builds the local/desktop app** (`vite.config.ts:63-64`). The web flag is compiled to a literal (`import.meta.env.VITE_OH_WEB`) so Rollup dead-code-eliminates the web runtime out of the desktop build (`vite.config.ts:66-76`).
-
-### The desktop launcher scripts
-
-`Launch Open Historia.{bat,command,sh}` are the player-facing entry points: they check Node, run `scripts/fetch-map-assets.mjs`, `npm install`, `npm run build`, and start the server. `Update Open Historia.*` re-pulls while preserving saves/scenarios/map data. Keep them LF (§5).
+The only build mode left is `--mode web`, gated by `VITE_OH_WEB`. `import.meta.env.VITE_OH_WEB` is compiled to a literal so Rollup keeps the web runtime (`src/runtime/web/**`) in the bundle; there is no desktop/Android branch in the build anymore. (The desktop/Android branches that used to be tree-shaken away were removed in the web-only refactor.)
 
 ---
 
 ## 7. Running tests
 
 ```bash
-npm test
-# => node --test "server/**/*.test.js"
+bun test
+# or: node --test (the built-in Node test runner)
 ```
 
-Tests use the **built-in Node test runner** (`node --test`) with `node:assert/strict` — **no test framework, no extra deps**. They target the server's pure, dependency-light helpers (they run without booting the server):
+The `package.json` `test` script runs `node --test` over the three load-bearing test files:
 
-| Test file | Covers |
+```
+node --test src/runtime/shared/ownerMigration.test.js src/runtime/gameplayStats.test.js tools/content-node/security.test.js
+```
+
+`bun test` is the shorter way to invoke the same suite (bun ships its own runner that understands `node --test`-style files). `bun test <path>` can also be pointed at a glob to pick up the other colocated tests that aren't wired into the `test` script — e.g. `bun test src/runtime/appUpdate.test.js`, `src/runtime/eventDedup.test.js`, `src/Game/AI/regionVocab.test.js`.
+
+The suite uses the **built-in Node test runner** plus `node:assert/strict` — **no test framework, no extra deps**. The tests target pure, dependency-light helpers that run without booting anything:
+
+| Test file (surviving path) | Covers |
 |-----------|--------|
-| `server/security.test.js` | Path containment, the CSRF/origin guard, HTTP range parsing, the hub host allowlist (`server/security.js`). |
-| `server/ownerMigration.test.js` | The owner-code → owner-name resolver, with fixtures transcribed from real shipped scenario data (`server/ownerMigration.js`). |
+| `tools/content-node/security.test.js` | Path containment, the CSRF/origin guard, HTTP range parsing, the hub host allowlist — the guards that used to live in `server/security.js`, relocated to the content-node tooling under `tools/content-node/`. |
+| `src/runtime/shared/ownerMigration.test.js` | The owner-code → owner-name resolver, with fixtures transcribed from real shipped scenario data (`src/runtime/shared/ownerMigration.js`, relocated from `server/ownerMigration.js`). |
+| `src/runtime/gameplayStats.test.js` | Derived gameplay-stat math. |
+| `src/runtime/appUpdate.test.js`, `src/runtime/eventDedup.test.js`, `src/Game/AI/regionVocab.test.js` | App-update + event-dedup + AI region-vocabulary helpers (colocated with their modules; not wired into the `test` script, but picked up by `bun test <path>`). |
 
-Convention when adding tests: colocate a `*.test.js` next to the module under `server/`, keep the tested functions **pure** so they need no server, and prefer real transcribed fixtures over invented ones (`server/ownerMigration.test.js:3-7`). The `server/**/*.test.js` glob picks them up automatically. The client (`src/`) has no automated test suite; render-path changes are verified by actually booting the app.
+Convention when adding tests: colocate a `*.test.js` next to the module it covers, keep the tested functions **pure** so they need no server or browser, and prefer real transcribed fixtures over invented ones. UI/render-path changes in `src/` have no automated suite — verify them by actually booting the web build (`bun run dev:web`).
 
 ---
 
 ## 8. Load-bearing identifiers that must never change
 
-These strings are wired into external contracts (release assets players download, the Android package identity, update checks). Renaming any of them silently breaks installs or self-updates. **Treat them as frozen.**
+These strings are wired into external contracts — the `map-data` GitHub Release assets the web build fetches at runtime, and the signed node-directory / content-manifest URLs the client verifies against. Renaming any of them silently breaks the content fetch or the trust chain. **Treat them as frozen.** (The desktop-bundle / Android-APK identifiers that used to live here — `Open-Historia.zip`, `app-stable`/`app-beta` release tags, `pax-historia.apk`, `io.github.arkniem.paxhistoria`, `app.paxhistoria`, the `Build: N` self-update convention — were removed with the desktop and Android builds.)
 
 | Identifier | Where | Why it's frozen |
 |-----------|-------|-----------------|
-| **`io.github.arkniem.paxhistoria`** (Capacitor `appId`) | `mobile/capacitor.config.json:2` | The Android application ID. Changing it makes every existing install a *different* app — no in-place update; users would get a duplicate. |
-| **`pax-historia.apk`** (release asset name) | `.github/workflows/android-apk.yml:59,63,75` | The exact filename players download from the `android` release, and what the app's self-update check fetches. The README links it by name. |
-| **`android`** (rolling release tag) | `android-apk.yml:73-75` | The APK is republished to this single rolling release; the app updates itself from it. |
-| **`app-stable` / `app-beta`** (release tags) | `app-bundle.yml:57-68` | The `Open-Historia.zip` download tags for the two desktop channels. |
-| **`Open-Historia.zip`** (bundle asset name) | `app-bundle.yml:54,84`; README | The one-download full app; linked by name. |
-| **`map-data`** (release) + the per-asset names | `scripts/map-assets.json` | The map-binary release and asset names (`regions.pmtiles`, `regions-seed-z8.geojson`, `default-regions-names.geojson`, …). The fetch script resolves these by name; a rename orphans every fetch. |
-| **`app.paxhistoria`** (Capacitor `hostname`) | `mobile/capacitor.config.json:7` | The WebView origin the Android app serves under. |
-| **`Build: N`** convention | `android-apk.yml:32-35,72` | The boot screen matches `__APP_BUILD__` (stamped from the run number) against `Build: N` in the release notes to decide whether to self-update. Keep both sides in sync. |
+| **`map-data`** (release) + the per-asset names | `scripts/map-assets.json` | The map-binary release and asset names (`regions.pmtiles`, `regions-seed-z8.geojson`, `default-regions-names.geojson`, …). The fetch script resolves these by name, and the web build's content-trust layer hashes/verifies them; a rename orphans every fetch and breaks every hash check. |
+| **`openhistoria.com`** origin + `/play/` base | `vercel.json`, `vite.config.ts` `--base /play/` | The site's canonical origin and the game's base path. The signed node directory, content manifest, and account/sync endpoints are keyed to this origin; the bundle's absolute URLs are built relative to `/play/`. |
+| **`open-historia-web`** IndexedDB database name | `src/runtime/web/idb.js` | Bumping `DB_VERSION` is additive; renaming the database orphans every existing player's local scenarios/games. |
+| Pinned root public key id **`oh-root-1`** | `src/runtime/web/trust/pinned-key.js` | The Ed25519 root key the content manifest / node directory are signed against. The private key is offline; rotation = ship both keys for one release, then drop the old one. |
+| **`pax-historia-scenario-bundle/2`** bundle schema | `src/runtime/web/models.js` (`SCENARIO_BUNDLE_SCHEMA`) | The only compatibility gate on a scenario-bundle file strangers swap. The schema string moves with the owner rename, so an old build can't silently mis-resolve a name-keyed bundle. |
 
-When a map file legitimately changes, you upload a *new* asset and update its `sha256`/`bytes` in `scripts/map-assets.json` — you don't rename the contract-facing names.
+When a map file legitimately changes, you upload a *new* asset to the `map-data` release and update its `sha256`/`bytes` in `scripts/map-assets.json` — you don't rename the contract-facing asset names.
 
 ---
 
@@ -236,12 +229,12 @@ The gitignored / release-hosted files:
 | `public/assets/cities.pmtiles` | `cities.pmtiles` |
 | `public/assets/cities-seed.json` | `cities-seed.json` |
 | `public/assets/regions-seed.geojson` | `regions-seed-z8.geojson` |
-| `server/data/scenarios/default/regions.geojson` | `default-regions-names.geojson` |
+| `data/scenarios/default/regions.geojson` | `default-regions-names.geojson` |
 
 Rules of thumb:
 - **Never `git add`** any `*.pmtiles`, the seed geojson/json, or the default scenario's `regions.geojson`. They're gitignored; don't `-f` them in.
 - **To change a map file:** upload the new asset to the `map-data` release, then update its `sha256` + `bytes` in `scripts/map-assets.json`. `fetch-map-assets.mjs` re-downloads any listed file that's missing or hash-mismatched.
-- **The builds actively drop these from the bundle** — `vite.config.ts`'s `dropMapBinaries` plugin deletes the pmtiles (and, for web, the editor seeds) after copy, because Cloudflare Pages rejects any file over 25 MiB and nothing loads a pmtiles archive from the bundle anyway (the desktop streams them off disk via `/api/runtime/pmtiles/:assetKey`; the web build fetches them from content nodes, hash-verified). Don't defeat this plugin. See [Assets & data](assets-and-data.md).
+- **The web build actively drops these from the bundle** — `vite.config.ts`'s `dropMapBinaries` plugin deletes the pmtiles (and the editor seeds) after copy: at ~100 MB each they're too large for a static-site host and nothing loads a pmtiles archive from the bundle anyway, since the web build resolves pmtiles via the registry Worker's CORS+range proxy / content nodes (`VITE_OH_PMTILES_URL`), hash-verified. Don't defeat this plugin. See [Assets & data](assets-and-data.md).
 
 Related gitignored-but-not-in-LFS runtime artifacts you also shouldn't commit: `/fmg/` (vendored Fantasy Map Generator, fetched by `scripts/fetch-fmg.mjs`), `/src/runtime/web/generated/` (web seed), `/node-content/` (content-node store), and the offline signing keys `trust/*.key.pem` / `*.key` (**never commit a signing key**).
 
@@ -251,13 +244,15 @@ Related gitignored-but-not-in-LFS runtime artifacts you also shouldn't commit: `
 
 | You want to… | Look at |
 |--------------|---------|
-| Change the server API / routes | `server/server.js`, `server/*Store.js`, [Server](server.md) |
-| Touch security guards | `server/security.js` (+ `security.test.js`) |
+| Change the web "API" / routes | `src/runtime/web/router.js`, `src/runtime/web/*Store.js`, [Web runtime](web-runtime.md), [Web build](web-build.md) |
+| Touch the shared owner-migration resolver | `src/runtime/shared/ownerMigration.js` (+ `ownerMigration.test.js`) |
+| Touch the content-node trust guards / signing | `tools/content-node/` (`trust.js`, `node.js`, `security.test.js`) |
 | Edit the map editor | `src/Editor/` (separately licensed — `src/Editor/LICENSE`) |
 | Edit the game map / UI | `src/Game/` — see [Game map](game-map.md), [Game UI](game-ui.md) |
 | World-state fields & flow | [World state](world-state.md) |
-| AI prompts / schemas | [AI overview](ai-overview.md), [AI schemas](ai-schemas.md) |
-| Build/release plumbing | `.github/workflows/`, `scripts/`, `vite.config.ts` |
+| Runtime services (library/scenario stores, i18n, resolver) | [Runtime services](runtime-services.md), `src/runtime/` |
+| AI prompts / schemas | [AI overview](ai-overview.md), [AI schemas](ai-schemas.md), [AI prompts](ai-prompts.md) |
+| Build / deploy plumbing | `vercel.json`, `package.json:scripts`, `scripts/`, `vite.config.ts` |
 | Map-data hosting | `scripts/map-assets.json`, `scripts/fetch-map-assets.mjs` (§9) |
 | Rebuild an official preset | `scripts/presets/build-preset.mjs <spec>` |
-| Web/site deploy | `WEB-DEPLOY.md`, [Web build](web-build.md) |
+| Web/site deploy | [Web build](web-build.md), [Delivery & deploy](delivery-and-deploy.md) |

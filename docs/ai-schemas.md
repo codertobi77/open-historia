@@ -2,7 +2,7 @@
 
 Every AI gameplay task in Open Historia hands the model a JSON Schema (as a provider "tool") and gets back a JSON object it must trust before mutating the world. This page documents the schemas the model must return (`src/Game/AI/gameplaySchemas.js`), the hand-rolled two-layer validator that gates every response, and the strict-vs-salvage retry discipline in `runJsonTask` (`src/Game/AI/gameplay.js`) that decides whether a bad answer earns a corrective retry or gets repaired in place. If you are adding a field the model should emit, read the [`additionalProperties: false` trap](#the-additionalpropertiesfalse-trap) first — it is the single most common way a new feature silently does nothing.
 
-Related pages: [World state](world-state.md) (what these payloads mutate), [AI providers](ai-providers.md) (how the schema becomes a tool call in `main.jsx`), [Gameplay orchestration](ai-gameplay.md) (the task callers), [Gameplay prompts](gameplay-prompts.md) (the templates rendered alongside each schema).
+Related pages: [World state](world-state.md) (what these payloads mutate), [AI overview](ai-overview.md) (provider dispatch, transport, `callAI`/`providerFetch` — how the schema becomes a tool call in `main.jsx`), [AI prompts](ai-prompts.md), [Game map](game-map.md). The task callers and the read/write bundle helpers are described inline in the AI Overview's [task catalog][ai-overview.md] section.
 
 ---
 
@@ -327,7 +327,7 @@ Every AI gameplay call goes through this one function. It owns prompt assembly, 
 | Option | Meaning |
 |---|---|
 | `fallback` | Async function returning a deterministic payload when the AI can't produce a valid one. If absent, failure **throws** instead of falling back (`:519`). |
-| `signal` | External `AbortSignal` (player pressed Cancel) — propagated into `callAI` and the server relay (`:435`). |
+| `signal` | External `AbortSignal` (player pressed Cancel) — propagated into `callAI` (and a same-origin relay only on a self-hosted local install; on the web build it goes straight to the provider's `fetch`) (`:435`). |
 | `timeoutMs` | Default `120000`. `0`/non-finite **disables** the deadline (jumps use `0` unless "Limit AI generation" is on → 300000, `:1888`). |
 | `userMessage` | The single user turn seeding `history`. |
 | `validatePayload` | Optional Layer-2 callback `(candidate, { attempt, finalAttempt })`. |
@@ -400,7 +400,7 @@ When a model answers in prose instead of a tool call, `runJsonTask` must dig the
 4. **`balancedJsonCandidates`** (`:243`) — a string-aware brace/bracket walker that extracts every balanced top-level `{…}`/`[…]`, sorted objects-first so a stray inline array in the model's commentary can't shadow the real object payload. Each candidate is parsed leniently; first object wins.
 5. Returns `null` if nothing parses → Layer 1 reports `"Response did not contain parseable JSON or tool arguments."`
 
-This ladder is what lets local/self-hosted models without tool support still play; hosted providers normally return clean `toolInput` and skip it entirely.
+This ladder is what lets local/self-hosted models without tool support still play. On the web build every call is browser→provider direct, and hosted cloud providers normally return a clean `toolInput` and skip this ladder entirely — there is no relay involved. The ladder matters for the small/local provider branch (Ollama/LM Studio/etc.), where models often answer in prose instead of using the tool.
 
 ---
 
@@ -414,4 +414,4 @@ This ladder is what lets local/self-hosted models without tool support still pla
 | Change map/world-aware validation | `validateGeneratedWorldChanges` (`gameplay.js:1002`) |
 | Tune retry feedback wording | The corrective strings returned by the validators (they are shown to the model verbatim) |
 | Debug "the AI turn silently became a fallback" | `runJsonTask` `failureReason`, and check whether a strict error leaked (see `finalAttempt`, §8.4) |
-| Debug provider tool wiring | `callAI` in `main.jsx` ([AI providers](ai-providers.md)) |
+| Debug provider tool wiring | `callAI` in `main.jsx` ([AI overview](ai-overview.md)) |

@@ -38,7 +38,7 @@ import path from "node:path";
 import url from "node:url";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
-const SRC = path.join(ROOT, "server", "country-names.json");
+const SRC = path.join(ROOT, "data", "country-names.json");
 const OUT_DIR = path.join(ROOT, "src", "runtime", "generated");
 const OUT = path.join(OUT_DIR, "nameToAlpha2.js");
 const OUT_NAMES = path.join(OUT_DIR, "countryNames.js");

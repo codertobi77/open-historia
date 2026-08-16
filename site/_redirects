@@ -2,9 +2,8 @@
 #
 # This file used to hold:
 #     /play/*  /play/index.html  200
-# Cloudflare rejected it outright — `/play/index.html` itself matches `/play/*`, so it
-# is an infinite loop. Wrangler reported "Parsed 0 valid redirect rules" and ignored
-# the file, so the rule never ran in production a single time.
+# That rule is an infinite loop — `/play/index.html` itself matches `/play/*` —
+# so hosts rejected it and it never ran in production a single time.
 #
 # It is also unnecessary: the web game does no path-based routing (it only uses
 # history.replaceState to strip ?magic= from the query string), so there are no

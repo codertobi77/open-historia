@@ -1,6 +1,6 @@
 # World State & Turn Model
 
-Open Historia keeps a running game in five plain-JSON documents served from a per-scenario/per-game runtime endpoint. The largest and most important is **`world.json`** — the political map plus everything the AI has changed since the scenario began (region ownership, polities, colors, tags, reputation, units, structures, catalyst, history). The **turn loop** is a "time jump": the AI returns a batch of `events`, each carrying machine-readable `impacts`, and `applyEventImpactsToWorld` folds those impacts into world state before it is persisted; the map re-renders because `useWorldState` polls `world.json` every 5 seconds.
+Open Historia keeps a running game in five plain-JSON documents served from a per-scenario/per-game runtime endpoint (on the web build, that endpoint is the fetch-interceptor `src/runtime/web/router.js` reading/writing IndexedDB — there is no server process). The largest and most important is **`world.json`** — the political map plus everything the AI has changed since the scenario began (region ownership, polities, colors, tags, reputation, units, structures, catalyst, history). The **turn loop** is a "time jump": the AI returns a batch of `events`, each carrying machine-readable `impacts`, and `applyEventImpactsToWorld` folds those impacts into world state before it is persisted; the map re-renders because `useWorldState` polls `world.json` every 5 seconds.
 
 Core files: `src/runtime/gameState.js` (state shape, normalizers, impact application), `src/Game/Map/useWorldState.js` (the poll), `src/Game/Map/unitsController.js` (the units peer-poll), `src/runtime/countryTags.js` (tag rules), `src/runtime/assets.js` (read/write/cache plumbing), `src/Game/AI/gameplay.js` (`applySimulationResult`, the turn writer).
 
@@ -28,7 +28,7 @@ All mutable game state lives behind a small set of URLs built in `src/runtime/as
 
 ### Games vs scenarios
 
-The same asset keys are served from two different server roots (`src/runtime/library.js:10`):
+The same asset keys are served from two different `/api/*` roots (`src/runtime/library.js:10`):
 
 - **Scenarios** — `/api/scenarios/*`. The immutable authored seed (WWII preset, a hub download, an editor export). `world.json` here is the STARTING position produced by the editor (`src/Editor/exportPreset.js:220`).
 - **Games** — `/api/games/*`. A live playthrough. Selecting a scenario spawns a game whose `world.json` starts as a copy of the scenario's and is then mutated in place by every jump.
@@ -83,7 +83,7 @@ Empty string = defaults (Impact, white letters, half-black outline). The font re
 
 ### 2e. Units and markers (ride inside world state)
 
-Stored in world so they share every read/write/poll/normalize path with no server change.
+Stored in world so they share every read/write/poll/normalize path with no separate endpoint.
 
 | Field | Type | Default | Element shape (normalizer) |
 |---|---|---|---|
@@ -219,7 +219,7 @@ Colors live in a separate asset (`code → [r,g,b]`), not inside `world.json`. `
 
 ## 10. Country tags — `src/runtime/countryTags.js`
 
-A dependency-free module (imported by the editor, the game, and the server) that owns the two rules both halves must agree on: how a tag list is normalized and which source wins.
+A dependency-free module (imported by the editor and the game) that owns the two rules both halves must agree on: how a tag list is normalized and which source wins.
 
 | Export | Location | Purpose |
 |---|---|---|

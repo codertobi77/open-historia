@@ -238,18 +238,22 @@ function getGeminiUrl(model, apiKey) {
 
 // AI calls go straight from the browser to the provider so the player's API key
 // only ever reaches the provider — never a server or a community node. Direct is
-// always tried first. Only when the page is served from a machine the player
-// controls (localhost / the LAN box the Android client loads from) do we fall
-// back to that trusted server's same-origin /api/ai/relay, and only for an
-// endpoint that refused the direct call (self-hosted OpenAI-/Anthropic-style
-// backends like Ollama or LM Studio rarely send browser CORS headers). On a
-// hosted website there is no relay, so every call is direct-only and the key is
-// never handed to anything but the provider. Gemini and native Anthropic were
-// already direct — both allow browser calls explicitly.
+// always tried first. When the page is served from a machine the player
+// controls (localhost / a LAN box) AND a same-origin /api/ai/relay is reachable
+// there, a direct call that the endpoint refused (self-hosted OpenAI-/Anthropic-
+// style backends like Ollama or LM Studio rarely send browser CORS headers) falls
+// back to that relay, which re-issues the request server-side. This repo ships
+// only the web build, which never runs such a relay: every call is direct-only
+// and the key is never handed to anything but the provider, and a local backend
+// that won't send CORS headers is surfaced with a clear fix-instead-of-failing
+// silently. Gemini and native Anthropic were already direct — both allow browser
+// calls explicitly.
 
-// True when this page is served from a machine the player controls, i.e. a
-// trusted same-origin relay is reachable. The LAN private ranges cover the
-// Android client, which loads the UI from a local server on the home network.
+// True when this page is served from a machine the player controls, i.e. a local
+// same-origin relay could be reachable. This repo's web build never serves one
+// (no bundled server), so this stays false on the hosted site; the branch is
+// kept so a self-hosted local install that runs a relay can still use it. The LAN
+// private ranges cover a self-hosted UI served from a home network box.
 function isLocallyServed() {
     if (typeof window === "undefined") return false;
     const host = window.location.hostname;
@@ -337,8 +341,7 @@ async function providerFetch(url, options = {}) {
             throw new Error(
                 `${origin} refused the browser's request. A local AI server has to allow this site's ` +
                 `origin before ${site} can use it: restart Ollama with OLLAMA_ORIGINS=${site} ` +
-                `(LM Studio: turn on CORS in its server settings), then try again. ` +
-                `The desktop app needs no such setup.`,
+                `(LM Studio: turn on CORS in its server settings), then try again.`,
             );
         }
         throw error;

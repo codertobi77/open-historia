@@ -1,6 +1,6 @@
 # Map Data & Assets
 
-Open Historia paints the world from a handful of heavy, mostly-static binaries (three PMTiles vector archives, two GeoJSON seed/geometry files) plus small per-scenario JSON documents (colors, flags, tags, world state). This page traces where each asset physically lives (app bundle vs. the writable `OH_DATA_DIR` vs. a GitHub Release vs. a Cloudflare-hosted content swarm), how the server route layer resolves a scenario override on top of the shared default, and how the browser client (`src/runtime/assets.js`) caches, warms, primes, and memoizes everything without OOMing the tab. The single load-bearing rule: the big binaries are **never** in Git — they are downloaded from a GitHub Release named `map-data` on first launch, checksum-verified, and served locally.
+Open Historia paints the world from a handful of heavy, mostly-static binaries (three PMTiles vector archives, two GeoJSON seed/geometry files) plus small per-scenario JSON documents (colors, flags, tags, world state). This page traces where each asset physically lives (app bundle vs. the `map-data` GitHub Release vs. the signed content-node swarm), how the web build resolves a scenario override on top of the shared default (a `window.fetch` interceptor routes every same-origin `/api/*` call to IndexedDB-backed store handlers, with heavy tiles proxied from the content origin), and how the browser client (`src/runtime/assets.js`) caches, warms, primes, and memoizes everything without OOMing the tab. The single load-bearing rule: the big binaries are **never** in Git — they are downloaded on demand from a GitHub Release named `map-data`, checksum-verified, and streamed to the web client from the content origin.
 
 ---
 
@@ -13,62 +13,53 @@ Every runtime asset the map depends on, with its physical filename, MIME, and ho
 | Regions vector tiles | `regions` | `regions.pmtiles` (~105.8 MB) | `map-data` Release | `GET /api/runtime/pmtiles/regions` | GADM level-1 borders; the z0 tile is the region catalog; paints owners above z6.5 |
 | Countries vector tiles | `countries` | `countries.pmtiles` (~62.7 MB) | `map-data` Release | `GET /api/runtime/pmtiles/countries` | z0 tile is the country index + label source; warmed on **every** map |
 | Cities vector tiles | `cities` | `cities.pmtiles` (~1.5 MB) | `map-data` Release | `GET /api/runtime/pmtiles/cities` | Modern-day city labels layer |
-| Custom regions geometry | `regionsGeojson` | `regions.geojson` (per-scenario) | Scenario dir / `default` scenario | `GET /api/runtime/json/regionsGeojson` | Editor-drawn shapes; `EMPTY_FEATURE_COLLECTION` when absent; **never cached client-side** |
-| Custom cities geometry | `citiesGeojson` | `cities.geojson` (per-scenario) | Scenario dir | `GET /api/runtime/json/citiesGeojson` | Era-accurate city points; rendered when `world.customCities`; **never cached client-side** |
-| Region seed | — | `regions-seed.geojson` (~55.3 MB) | `map-data` Release → `public/assets/` | `GET /assets/regions-seed.geojson` | Offline-produced seed the **map editor** imports; not a runtime map layer |
-| City seed | — | `cities-seed.json` (~7.9 MB) | `map-data` Release → `public/assets/` | `GET /assets/cities-seed.json` | Consumed by the editor (`citiesImport.js`) and AI prompt context (`promptContext.js`) |
-| Nation colors | `colors` | `colors.json` (~3.4 KB) | Scenario dir, else app palette | `GET /api/runtime/json/colors` | Owner-name → hex; falls back to immutable `public/assets/colors.json` |
-| Nation flags | `flags` | `flags.json` (per-scenario) | Scenario dir | `GET /api/runtime/json/flags` | Owner code → PNG data URL; `{}` when absent |
-| Nation tags | `tags` | `tags.json` (per-scenario) | Scenario dir | `GET /api/runtime/json/tags` | Owner code → `string[]`; **starting** tags only (merge with `world.countryTags`) |
-| Map background | `backgroundData` | `background.json` (per-scenario) | Scenario dir | `GET /api/runtime/json/backgroundData` | Heavy `{dataUrl}`/`{geojson}` payload; loaded only when `world.background` set |
-| World state | `world` | `world.json` (per-game/scenario) | Game dir, else scenario | `GET /api/runtime/json/world` | The live simulation document — see [World state](world-state.md) |
-| Runtime game JSON | `game`, `events`, `chat`, `actions`, `advisor`, `prompts`, `snapshots` | under game `storage/` | Game dir | `GET/PUT /api/runtime/json/<key>` | Per-game session state; polled ~5s |
+| Custom regions geometry | `regionsGeojson` | `regions.geojson` (per-scenario) | IndexedDB record (scenario), else `default` scenario | `GET /api/runtime/json/regionsGeojson` | Editor-drawn shapes; `EMPTY_FEATURE_COLLECTION` when absent; **never cached client-side** |
+| Custom cities geometry | `citiesGeojson` | `cities.geojson` (per-scenario) | IndexedDB record (scenario) | `GET /api/runtime/json/citiesGeojson` | Era-accurate city points; rendered when `world.customCities`; **never cached client-side** |
+| Region seed | — | `regions-seed.geojson` (~55.3 MB) | `map-data` Release | `GET /assets/regions-seed.geojson` (or `VITE_OH_PMTILES_URL`) | Offline-produced seed the **map editor** imports; not a runtime map layer |
+| City seed | — | `cities-seed.json` (~7.9 MB) | `map-data` Release | `GET /assets/cities-seed.json` (or `VITE_OH_PMTILES_URL`) | Consumed by the editor (`citiesImport.js`) and AI prompt context (`promptContext.js`) |
+| Nation colors | `colors` | `colors.json` (~3.4 KB) | IndexedDB record (scenario), else app palette | `GET /api/runtime/json/colors` | Owner-name → hex; falls back to immutable `public/assets/colors.json` |
+| Nation flags | `flags` | `flags.json` (per-scenario) | IndexedDB record (scenario) | `GET /api/runtime/json/flags` | Owner code → PNG data URL; `{}` when absent |
+| Nation tags | `tags` | `tags.json` (per-scenario) | IndexedDB record (scenario) | `GET /api/runtime/json/tags` | Owner code → `string[]`; **starting** tags only (merge with `world.countryTags`) |
+| Map background | `backgroundData` | `background.json` (per-scenario) | IndexedDB record (scenario) | `GET /api/runtime/json/backgroundData` | Heavy `{dataUrl}`/`{geojson}` payload; loaded only when `world.background` set |
+| World state | `world` | `world.json` (per-game/scenario) | IndexedDB record (game), else scenario | `GET /api/runtime/json/world` | The live simulation document — see [World state](world-state.md) |
+| Runtime game JSON | `game`, `events`, `chat`, `actions`, `advisor`, `prompts`, `snapshots` | (per-game, in the game record) | IndexedDB record (game) | `GET/PUT /api/runtime/json/<key>` | Per-game session state; polled ~5s |
 
-The client-side URL and PMTiles-archive tables are declared in `src/runtime/assets.js:63` (`JSON_URLS`) and `src/runtime/assets.js:122` (`PMTILES_ARCHIVES` / `PMTILES_PROTOCOL_URLS`). The server-side filename maps live in `server/libraryStore.js` — `PMTILES_ASSET_FILES` (`:281`), `SCENARIO_GEOJSON_ASSET_FILES` (`:291`), `OPTIONAL_JSON_ASSET_FILES` (`:258`), and `JSON_ASSET_DEFAULTS` (`:326`).
+The client-side URL and PMTiles-archive tables are declared in `src/runtime/assets.js:63` (`JSON_URLS`) and `src/runtime/assets.js:122` (`PMTILES_ARCHIVES` / `PMTILES_PROTOCOL_URLS`). The asset-key sets that govern which keys are JSON vs. PMTiles vs. optional — `STORAGE_JSON_ASSET_KEYS`, `PMTILES_ASSET_KEYS`, `SCENARIO_GEOJSON_ASSET_KEYS`, `OPTIONAL_JSON_ASSET_KEYS`, and the seed/fallback defaults — live in `src/runtime/web/models.js` (the surviving constants moved out of the deleted `server/libraryStore.js`).
 
 **Basemap raster** (satellite/streets/terrain imagery) is *not* one of these files — it streams live from public ESRI/ArcGIS Online and AWS terrain tile servers (§8), so it is not part of the `map-data` Release.
 
 ---
 
-## 2. Where assets come from — the four sources
+## 2. Where assets come from
 
-An asset can be resolved from up to four places. Which one wins depends on the build (desktop/embedded vs. web) and whether the active scenario ships an override.
+On the web build there is no `OH_DATA_DIR` and no disk — an asset is resolved from up to four places, all browser-side or content-origin-side. Which one wins depends on whether the active scenario ships an override.
 
-| Source | What lives there | Which builds |
+| Source | What lives there | When it wins |
 |---|---|---|
-| **App bundle** (`public/assets/`, or `dist/assets/` in a built app) | The shared default `*.pmtiles`, `*-seed.*`, immutable `colors.json` | Desktop / Termux |
-| **`OH_DATA_DIR`** (`server/data/…`, or a writable sandbox on Android) | Per-scenario overrides, per-game state, and — on the embedded server — the downloaded pmtiles under `<DATA_DIR>/assets/` | All node-server builds |
-| **`map-data` GitHub Release** | Canonical copies of every heavy binary, checksum-pinned | Fetched at install/update time |
-| **Cloudflare / content-node swarm** | Byte-identical pmtiles served over HTTP range requests, hash-verified | Web build only |
+| **IndexedDB record** (`open-historia-web` database, `src/runtime/web/idb.js`) | Per-scenario overrides (pmtiles/geojson/colors/flags/tags/cover), per-game state (`world`/`game`/`events`/…), the seeded `default` scenario, UI settings, language overrides | Always, for every same-origin `/api/runtime/json/*` and `/api/scenarios/:id/assets/*` call — the `window.fetch` interceptor (`src/runtime/web/router.js`) answers it directly |
+| **`map-data` GitHub Release** | Canonical, checksum-pinned copies of every heavy binary (the three pmtiles + the seed geojson/json + the default scenario's `regions.geojson`) | The source of truth for the heavy map tiles; mirrored to content nodes | 
+| **Registry Worker CORS+range proxy + content-node swarm** (`VITE_OH_PMTILES_URL`, `src/runtime/web/contentTrust.js`) | Byte-identical pmtiles + `default-regions.geojson`, served over HTTP range requests, hash-verified against the signed content manifest | When the interceptor handles `/api/runtime/pmtiles/<key>` and there is no per-scenario override — it proxies to the content origin; the client's `warmPmtilesArchive` prefers a connected content node, falling through to the Worker |
+| **App bundle** (`public/assets/`, copied into the built site) | Small immutable fallbacks: `colors.json` (the app palette), and the editor seeds (`regions-seed.geojson`, `cities-seed.json`) for the map-editor import flows | Only as a fallback for `colors`, and as the served path for editor seeds |
 
-### `OH_DATA_DIR` and the data-dir resolver
+### PMTiles resolution order (web build)
 
-`server/dataDir.js:16` exports the single writable root every store shares:
+For `/api/runtime/pmtiles/<key>` the interceptor (`src/runtime/web/router.js`) resolves in this order:
 
-```
-DATA_DIR = process.env.OH_DATA_DIR ? resolve(OH_DATA_DIR) : <server>/data
-```
+1. **Scenario override** — `getScenarioPmtilesOverride(key, range)` returns bytes uploaded into the scenario's IndexedDB record.
+2. **Content origin** — proxy `${VITE_OH_PMTILES_URL || "/assets"}/<key>.pmtiles` to the registry Worker / content-node swarm, with the incoming `Range`/method.
 
-Desktop and Termux leave `OH_DATA_DIR` unset → `server/data` (byte-identical layout). The **Android** app runs `server.js` in-process via nodejs-mobile and sets `OH_DATA_DIR` to a writable sandbox, because the `server/data` shipped inside the APK is read-only. `server/libraryStore.js:20` derives `DIST_DIR`, `PUBLIC_DIR`, and `DATA_ASSETS_DIR` (`= <DATA_DIR>/assets`, `:32`) from it.
+Because step 1 can serve different bytes after a scenario switch, the client rotates its PMTiles caches on token change (§6) — a correctness fix, not just memory hygiene. `warmPmtilesArchive` (`assets.js:855`) additionally tries the hash-verified node swarm first (`contentTrust.js`) before falling through to the origin, so a bad node can at worst force a retry and never delivers tampered bytes.
 
-### PMTiles resolution order (server)
+### JSON resolution order (web build)
 
-`resolveRuntimeBinaryAsset(assetKey)` — `server/libraryStore.js:2371` — resolves in this order and streams the first hit with `streamBinaryFile`:
+`readRuntimeJsonAsset(assetKey)` in `src/runtime/web/libraryStore.js` resolves per asset key:
 
-1. **Scenario override** — `getScenarioUploadPath(scenario.id, assetKey)` (an editor-uploaded per-scenario archive).
-2. **Fetched data-dir copy** — `<DATA_DIR>/assets/<file>.pmtiles` (embedded Android server, downloaded on first run).
-3. **Bundle fallback** — `public/assets/<file>.pmtiles`.
+- **Custom geometry** (`regionsGeojson`/`citiesGeojson`, in `SCENARIO_GEOJSON_ASSET_KEYS`): resolved from the active game's scenario record in IndexedDB. A non-default scenario with no `regions.geojson` of its own **borrows the `default` scenario's** Modern-Day geometry (the default scenario record owns those owner names); missing entirely → `EMPTY_FEATURE_COLLECTION`.
+- **Per-game state** (`world`, `events`, `game`, `colors`, `flags`, `tags`, `snapshots`, …): active game record first, then the selected scenario record.
+- **Optional JSON fallback**: only `colors` has a built-in fallback — the immutable app palette resolved from `public/assets/colors.json` (`generated/fallbackColors.js` in the bundle). `flags`/`tags` with no field → `{}`.
+- Otherwise → the default for the asset key, or `{}`.
 
-Because step 1 can serve different bytes after a scenario switch, the client rotates its PMTiles caches on token change (§6) — a correctness fix, not just memory hygiene.
-
-### JSON resolution order (server)
-
-`readRuntimeJsonAsset(assetKey)` — `server/libraryStore.js:2218`:
-
-- **Custom geometry** (`regionsGeojson`/`citiesGeojson`, in `SCENARIO_GEOJSON_ASSET_FILES`): resolved from the active game's scenario dir. A non-default scenario with no `regions.geojson` of its own **borrows the `default` scenario's** Modern-Day geometry (`:2237`); missing entirely → `EMPTY_FEATURE_COLLECTION`.
-- **Per-game state** (`world`, `events`, `game`, `colors`, `flags`, `tags`, `snapshots`, …): active game dir first (`:2258`), then the selected scenario dir (`:2271`).
-- **Optional JSON fallback** (`:2285`): only `colors` has a built-in fallback — the immutable app palette resolved from `dist/assets/colors.json` or `public/assets/colors.json` (`COLORS_ASSET_CANDIDATES`, `:356`). `flags`/`tags` with no file → `{}`.
-- Otherwise → `JSON_ASSET_DEFAULTS[assetKey] ?? {}`.
+The default scenario's ~12 MB `regions.geojson` is **not** in the IndexedDB seed; `fetchDefaultRegionsGeojson()` pulls `${VITE_OH_PMTILES_URL}/default-regions.geojson` once per session, never pinning an empty/failed result, so a transient miss retries. Without it the political map renders blank.
 
 ---
 
@@ -87,7 +78,7 @@ The manifest that `fetch-map-assets.mjs` reads. Note the **name/namespace split*
 | `public/assets/cities.pmtiles` | `cities.pmtiles` | 1 547 924 | same |
 | `public/assets/cities-seed.json` | `cities-seed.json` | 7 857 627 | same |
 | `public/assets/regions-seed.geojson` | **`regions-seed-z8.geojson`** | 55 350 393 | client name is stable; release name is versioned to a zoom generation (z8) |
-| `server/data/scenarios/default/regions.geojson` | **`default-regions-names.geojson`** | 55 401 660 | the `default` scenario's named custom-region geometry |
+| `data/scenarios/default/regions.geojson` | **`default-regions-names.geojson`** | 55 401 660 | the `default` scenario's named custom-region geometry |
 
 Root keys: `owner: "Open-Historia"`, `repo: "open-historia"`, `release: "map-data"`. Download URL is `https://github.com/<owner>/<repo>/releases/download/<release>/<asset>`.
 
@@ -95,7 +86,7 @@ Root keys: `owner: "Open-Historia"`, `repo: "open-historia"`, `release: "map-dat
 
 ### `scripts/fetch-map-assets.mjs`
 
-Makes the local tree match the manifest. Called by the launcher and updater **in place of** `git lfs pull`.
+Makes the local tree match the manifest. It's the maintainer-facing / content-node-fetch helper run **in place of** `git lfs pull` when seeding a local content node or refreshing the on-disk copies a node caches; the hosted web build fetches these over the network at runtime and doesn't need it.
 
 | Mode | Command | Behaviour |
 |---|---|---|
@@ -104,31 +95,26 @@ Makes the local tree match the manifest. Called by the launcher and updater **in
 
 Downloads to `<dst>.download`, verifies the SHA-256 **before** renaming into place, and is **best-effort**: it never exits non-zero (`process.exit(0)` on every path, `fetch-map-assets.mjs:92`) so a network failure can never block a launch or update. Requires Node 18+ for global `fetch`.
 
-### Embedded (Android) variant
+### Content-node variant
 
-`mobile/nodejs-project/fetchMapAssets.mjs` uses the **same** release + checksums but routes every asset into the writable `OH_DATA_DIR` instead of the read-only APK bundle (`fetchMapAssets.mjs:25` `targetFor`):
-
-- `server/data/<x>` → `<DATA_DIR>/<x>` (scenario geojson)
-- `public/assets/<x>` → `<DATA_DIR>/assets/<x>` (the pmtiles)
-
-This is why `resolveRuntimeBinaryAsset` checks `<DATA_DIR>/assets` before the bundle (§2).
+A content node operator runs the **same** release + checksums and fetches them into a writable content directory (see `tools/content-node/`) so the node can serve reads: the node fetches the `map-data` Release assets once into its content store, registers them hash-addressed (`/oh/v1/content/<sha256>`), and clients verify every byte against the signed `content-manifest.json`. This is how the heavy binaries reach the web client at runtime — there's no per-player `OH_DATA_DIR` anymore.
 
 ---
 
-## 4. Server runtime routes
+## 4. Runtime routes (answered by the fetch interceptor)
 
-The client talks only to these same-origin routes (`server/server.js`). In the **web build** there is no Express server — a `fetch()` interceptor in `src/runtime/web/router.js` answers the same paths from IndexedDB / a content CDN (§7).
+There is no Express server. The client still issues the same same-origin paths, and they're answered by the `window.fetch` interceptor in `src/runtime/web/router.js` (the `route()` dispatch maps each `domain` to a store handler under `src/runtime/web/`):
 
 | Route | Handler | Purpose |
 |---|---|---|
-| `GET /api/runtime/json/:assetKey` | `readRuntimeJsonAsset` | Serve a runtime JSON doc; `Cache-Control: no-store` (`server.js:459`) |
-| `PUT /api/runtime/json/:assetKey` | `writeRuntimeJsonAsset` | Persist to the active game; echoes back the normalized record (`server.js:470`) |
-| `GET /api/runtime/pmtiles/:assetKey` | `resolveRuntimeBinaryAsset` | Stream a pmtiles archive (range-capable via `streamBinaryFile`) (`server.js:481`) |
-| `HEAD /api/runtime/pmtiles/:assetKey` | `resolveRuntimeBinaryAsset` | `Content-Length` for the client freshness check; `Accept-Ranges: bytes` (`server.js:490`) |
-| `GET/PUT/DELETE /api/scenarios/:id/assets/:assetKey` | scenario asset store | Upload/serve per-scenario overrides (pmtiles, geojson, flags, tags, cover) (`server.js:333`) |
-| `GET/PUT/DELETE /api/games/:id/assets/:assetKey` | game asset store | Per-game images (`server.js:400`) |
+| `GET /api/runtime/json/:assetKey` | `readRuntimeJsonAsset` (`libraryStore.js`) | Read a runtime JSON doc from the active game/scenario IndexedDB record (base64 `data:` URLs excepted for cover — §6 of [Web build](web-build.md)); `Cache-Control: no-store` |
+| `PUT /api/runtime/json/:assetKey` | `writeRuntimeJsonAsset` (`libraryStore.js`) | Persist to the active game's IndexedDB record; echoes back the normalized record |
+| `GET /api/runtime/pmtiles/:assetKey` | scenario override → content-origin proxy (`router.js`) | Return a scenario's per-scenario pmtiles override from IndexedDB when present, else-proxy to `${VITE_OH_PMTILES_URL}/<key>.pmtiles` (range-capable; forwarded `Range`/method) |
+| `HEAD /api/runtime/pmtiles/:assetKey` | content-origin proxy (`router.js`) | `Content-Length` for the client's persisted-cache freshness check; `Accept-Ranges: bytes` |
+| `GET/PUT/DELETE /api/scenarios/:id/assets/:assetKey` | `handleScenarios` (`libraryStore.js`) | Upload/serve per-scenario overrides (pmtiles, geojson, flags, tags, cover) |
+| `GET/PUT/DELETE /api/games/:id/assets/:assetKey` | `handleGames` (`libraryStore.js`) | Per-game images |
 
-`writeRuntimeJsonAsset` (`libraryStore.js:2314`) auto-creates a game from the selected scenario if none is active, canonicalizes country refs for `world`/`game`/`colors`, then writes to the game dir and returns the re-read record. That echoed record is what the client caches (§5, `writeJson`).
+`writeRuntimeJsonAsset` auto-creates a game from the selected scenario if none is active, canonicalizes country refs for `world`/`game`/`colors`, then writes to the game record and returns the re-read record. That echoed record is what the client caches (§5, `writeJson`).
 
 ---
 
@@ -212,14 +198,14 @@ The **web build** uses a parallel key namespace: `buildRuntimeCacheUrl(key)` (`:
 
 ---
 
-## 7. Web build differences
+## 7. The fetch interceptor + node swarm
 
-Under `import.meta.env.VITE_OH_WEB` there is no node server:
+The web build has no node server. same-origin `/api/*` is answered by the fetch interceptor; heavy pmtiles stream from the content origin over a hash-verified node swarm.
 
-- **Route interception:** `src/runtime/web/router.js:31` installs a `fetch` interceptor for same-origin `/api/*`. `/api/runtime/pmtiles/:key` (`router.js:51`) checks a scenario override in IndexedDB (`getScenarioPmtilesOverride`), else fetches `${VITE_OH_PMTILES_URL || "/assets"}/<key>.pmtiles`. The hosted site sets `VITE_OH_PMTILES_URL` to the **registry Worker's CORS+range proxy**, because Cloudflare Pages can't host the 60–100 MB archives directly (same-origin would 404 to the SPA fallback).
-- **Verified content swarm:** `warmPmtilesArchive` (`assets.js:855`) dynamically imports `src/runtime/web/contentTrust.js` and calls `fetchVerifiedBuffer(url)`. It maps the URL to a manifest asset id (`assetIdFromUrl`, `contentTrust.js:72`), fetches `<node>/oh/v1/content/<sha256>` from the vetted node swarm, and verifies **every byte** against the signed `content-manifest.json` (`:140`). A bad/broken node can at worst force a retry — it can never deliver tampered bytes — and any failure falls through to the canonical origin, so a node outage is invisible. The signed node **directory** (`VITE_OH_DIRECTORY_URL`) is a deny-list/control doc; live addresses come from `nodes-live.json`. This whole block is stripped from the local download.
+- **Route interception:** `src/runtime/web/router.js` installs a `fetch` interceptor for same-origin `/api/*`. `/api/runtime/pmtiles/:key` checks a scenario override in IndexedDB (`getScenarioPmtilesOverride`), else fetches `${VITE_OH_PMTILES_URL || "/assets"}/<key>.pmtiles`. The hosted site sets `VITE_OH_PMTILES_URL` to the **registry Worker's CORS+range proxy**, because a static-site host (Vercel) can't serve the 60–100 MB archives directly (same-origin would 404 to the SPA fallback).
+- **Verified content swarm:** `warmPmtilesArchive` (`assets.js:855`) dynamically imports `src/runtime/web/contentTrust.js` and calls `fetchVerifiedBuffer(url)`. It maps the URL to a manifest asset id (`assetIdFromUrl`, `contentTrust.js:72`), fetches `<node>/oh/v1/content/<sha256>` from the vetted node swarm, and verifies **every byte** against the signed `content-manifest.json` (`:140`). A bad/broken node can at worst force a retry — it can never deliver tampered bytes — and any failure falls through to the canonical origin, so a node outage is invisible. The signed node **directory** (`VITE_OH_DIRECTORY_URL`) is a deny-list/control doc; live addresses come from `nodes-live.json`.
 
-See the [Node network](node-network.md) notes for the swarm/registry architecture.
+See [Web build](web-build.md) and [Web runtime](web-runtime.md) for the swarm/registry architecture and the trust chain.
 
 ---
 
@@ -237,7 +223,7 @@ See the [Node network](node-network.md) notes for the swarm/registry architectur
 | 6 | `cities` | Caching city layer | 10 | `cities.pmtiles` (~1.5 MB) | no |
 | 7 | `regions` | Caching regional borders | 24 | `regions.pmtiles` (~105.8 MB) | **no** — paints owners above z6.5 even on custom maps |
 
-**The ~162 MB prime:** warming tasks 3+6+7 pulls all three archives fully into `binaryValueCache` as in-memory `ArrayBuffer`s — the code cites regions ≈101 MB + countries ≈60 MB + cities ≈1.5 MB ≈ **162 MB** resident (`assets.js:231`; on-disk manifest sizes total ~170 MB). This is a deliberate memory-for-latency trade: a fully-warmed `MemorySource` archive answers tile requests without further network I/O. The cost is that this ~162 MB must be **freed on scenario switch** — which is exactly what the PMTiles cache rotation in `setRuntimeAssetEndpoints` (§5) does. See the [RAM & paint audit](performance.md) notes for the broader memory backlog (the geojson double-store, pinned PMTiles).
+**The ~162 MB prime:** warming tasks 3+6+7 pulls all three archives fully into `binaryValueCache` as in-memory `ArrayBuffer`s — the code cites regions ≈101 MB + countries ≈60 MB + cities ≈1.5 MB ≈ **162 MB** resident (`assets.js:231`; on-disk manifest sizes total ~170 MB). This is a deliberate memory-for-latency trade: a fully-warmed `MemorySource` archive answers tile requests without further network I/O. The cost is that this ~162 MB must be **freed on scenario switch** — which is exactly what the PMTiles cache rotation in `setRuntimeAssetEndpoints` (§5) does. (The geojson double-store and pinned-PMTiles memory backlog are tracked separately.)
 
 Task results feed a weighted progress bar: `normalizeTaskResult` (`preload.js:165`) sums the `.size` of each warmed asset into `loadedBytes`, and `progress = completedWeight / TOTAL_WEIGHT`.
 
@@ -286,13 +272,14 @@ Raster tiles are warmed via `warmRemoteResources` / `warmRemoteResource` (`asset
 |---|---|
 | `src/runtime/assets.js` | Client asset layer: read/write/warm/prime, caches, derived catalogs, basemap protocols |
 | `src/runtime/preload.js` | 30 s startup warm sequence + progress model |
-| `src/runtime/web/router.js` | Web-build `fetch` interceptor for `/api/*` (pmtiles → `VITE_OH_PMTILES_URL`) |
-| `src/runtime/web/contentTrust.js` | Web-build hash-verified content-node fetch |
-| `scripts/fetch-map-assets.mjs` | Desktop/updater: sync local tree to the `map-data` Release |
+| `src/runtime/web/idb.js` | IndexedDB primitives + `STORES` (the `open-historia-web` database) |
+| `src/runtime/web/router.js` | Fetch interceptor for `/api/*` (pmtiles → `VITE_OH_PMTILES_URL`) |
+| `src/runtime/web/libraryStore.js` | Scenarios/games/runtime store + handlers (IndexedDB-backed) |
+| `src/runtime/web/models.js` | Asset-key sets + `resolveOwnerRef` + meta readers |
+| `src/runtime/web/contentTrust.js` | Hash-verified content-node fetch + signed-manifest verification |
+| `src/runtime/shared/ownerMigration.js` | Owner-code → owner-name resolver (relocated from `server/`) |
+| `scripts/fetch-map-assets.mjs` | Sync a local content-node tree to the `map-data` Release |
+| `tools/content-node/` | Content-node software (`trust.js`, `node.js`, `security.test.js`) |
 | `scripts/map-assets.json` | The Release manifest (paths, versioned asset names, sha256, bytes) |
-| `mobile/nodejs-project/fetchMapAssets.mjs` | Embedded-server variant → downloads into `OH_DATA_DIR` |
-| `server/server.js` | Express `/api/runtime/{json,pmtiles}` routes |
-| `server/libraryStore.js` | Server-side asset resolution (scenario override → data-dir → bundle) |
-| `server/dataDir.js` | `DATA_DIR` / `OH_DATA_DIR` resolver |
 
-Related pages: [World state](world-state.md) · [Node network](node-network.md) · [Performance / RAM](performance.md)
+Related pages: [World state](world-state.md) · [Web build](web-build.md) · [Web runtime](web-runtime.md) · [Runtime services](runtime-services.md)

@@ -33,7 +33,7 @@ import {
   migrateWorld as migrateOwnerWorld,
   needsMigration as needsOwnerMigration,
   rekeyOwnerMap,
-} from "../../../server/ownerMigration.js";
+} from "../shared/ownerMigration.js";
 
 const SCENARIO_MANIFEST_KEY = "scenario-manifest";
 const GAME_MANIFEST_KEY = "game-manifest";

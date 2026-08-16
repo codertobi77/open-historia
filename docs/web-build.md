@@ -1,14 +1,14 @@
 # Web Build (openhistoria.com)
 
-The web build is the browser-only edition of Open Historia served from the trusted central origin (openhistoria.com / the `/play/` site). It runs the **entire game client unchanged** with **zero server**: a `window.fetch` interceptor answers every same-origin `/api/*` call out of IndexedDB, heavy map tiles stream from a Cloudflare Worker proxy (or a hash-verified community node swarm), and optional magic-link/Google accounts sync your games as client-side-encrypted blobs. Everything in this page lives under `src/runtime/web/` and ships **only** in the web build — it is dynamically imported behind `import.meta.env.VITE_OH_WEB` so it is dead-code-eliminated from the local desktop/APK download, which keeps its real same-origin Express server.
+This is the web build — the **only** edition of Open Historia, served from the trusted central origin (openhistoria.com / the `/play/` site). It runs the **entire game client unchanged** with **zero server process**: a `window.fetch` interceptor answers every same-origin `/api/*` call out of IndexedDB, heavy map tiles stream from the registry Worker's CORS+range proxy (or a hash-verified community content-node swarm), and optional magic-link/Google accounts sync your games as client-side-encrypted blobs. Everything in this page lives under `src/runtime/web/` and is gated behind `import.meta.env.VITE_OH_WEB`. There is no desktop Electron app and no Android APK variant anymore — those were removed in the web-only refactor.
 
-See also: [Server build](server-build.md) (the Express store this mirrors), [World state](world-state.md), [Assets & PMTiles](assets.md), [Scenario & game library](library.md), [Community hub](community-hub.md).
+See also: [Web runtime](web-runtime.md) (boot/lifecycle/onboarding), [World state](world-state.md), [Assets & data](assets-and-data.md), [Runtime services](runtime-services.md), [Conventions](conventions.md).
 
 ---
 
 ## 1. How it boots and how it is gated
 
-The whole web backend is behind one Vite mode flag. `.env.web` sets `VITE_OH_WEB=1`, and that file is loaded **only** by `vite build --mode web`. The normal `npm run build` never sees it, so `import.meta.env.VITE_OH_WEB` is `undefined` there and every `if (import.meta.env.VITE_OH_WEB)` branch — plus the dynamic imports it guards — is stripped by tree-shaking.
+The whole web backend is behind one Vite mode flag. `.env.web` sets `VITE_OH_WEB=1`, and that file is loaded **only** by `vite build --mode web` — which is now the **only** build mode. `VITE_OH_WEB` compiles to the literal `1`, so Rollup keeps every `if (import.meta.env.VITE_OH_WEB)` branch and the dynamic imports it guards in the bundle (the old framing was that these branches were tree-shaken away in a non-web desktop/Android build; those branches have been removed in the web-only refactor, so there is nothing left to strip).
 
 | Step | Location | What happens |
 |---|---|---|
@@ -24,14 +24,14 @@ The whole web backend is behind one Vite mode flag. `.env.web` sets `VITE_OH_WEB
 4. `initAccountWidget()` — the corner sign-in/sync chip (`accountWidget.js`).
 5. If `shouldShowHome()` (not yet "entered" this tab session) → `showHomePage()`; otherwise `connectBestNode()` in the background.
 
-Build scripts (`package.json`):
+Build scripts (`package.json`, run via **bun**):
 
 | Script | Command |
 |---|---|
-| `build:web` | `node scripts/seed-web-defaults.mjs && vite build --mode web --outDir dist-web --emptyOutDir` |
-| `build:site` | same, but `--base /play/` + `scripts/assemble-site.mjs` (the GitHub-Pages parchment landing site wraps `/play/`). |
+| `bun run build:web` | seeds web defaults → `vite build --mode web --outDir dist-web --emptyOutDir` |
+| `bun run build:site` | same, but `--base /play/` + `scripts/assemble-site.mjs` → `dist-site/` (landing page at `/`, game at `/play/`). **This is the script Vercel runs** on every merge to `main` (see `vercel.json`: `installCommand: "bun install"`, `buildCommand: "bun run build:site"`). |
 
-`scripts/seed-web-defaults.mjs` regenerates `src/runtime/web/generated/defaultScenario.js` (auto-generated; the default scenario's meta + colors + base64 cover) so the seed is baked into the bundle.
+`scripts/seed-web-defaults.mjs` regenerates `src/runtime/web/generated/defaultScenario.js` (auto-generated; the default scenario's meta + colors + base64 cover) so the seed is baked into the bundle. Seed generation + the vite build both run under Node via bun; Vercel detects bun from `package.json`'s `"packageManager": "bun@1.3.14"`.
 
 ---
 
@@ -42,7 +42,7 @@ Every URL points at the **registry Worker** (`open-historia-registry.nichojkrol.
 | Var | Value / default | Purpose | Read in |
 |---|---|---|---|
 | `VITE_OH_WEB` | `1` | Master flag; gates all web-mode code + dynamic imports. | `main.jsx`, `assets.js`, `libraryBar.jsx`, `settings.jsx` |
-| `VITE_OH_PMTILES_URL` | Worker `/content` | CORS+range proxy for the 60–100 MB pmtiles (Cloudflare Pages caps at 25 MB/file). Also the base for `default-regions.geojson`. Falls back to `/assets` (local dev). | `router.js:55`, `libraryStore.js:325` |
+| `VITE_OH_PMTILES_URL` | Worker `/content` | CORS+range proxy for the 60–100 MB pmtiles (a static-site host like Vercel can't serve files that large). Also the base for `default-regions.geojson`. Falls back to `/assets` (local dev). | `router.js:55`, `libraryStore.js:325` |
 | `VITE_OH_DIRECTORY_URL` | Worker `/node-directory.json` | The **signed** live node directory (updates as nodes are accepted/paused/banned). | `contentTrust.js:17` |
 | `VITE_OH_HUB_URL` | Worker root | Community-hub GitHub proxy (`/hub/*`), because GitHub attachments send no CORS. | `router.js:109` |
 | `VITE_OH_ACCOUNT_URL` | Worker root | Accounts (`/account/*`) + encrypted sync (`/sync/*`). | `account.js:11` |
@@ -57,7 +57,7 @@ There is no Express server. `installWebApiRouter()` (`router.js:138`) replaces `
 
 - Resolves the request URL against `location.href`. **Only** same-origin requests whose path starts with `/api/` are intercepted; everything else (AI providers, GitHub API, ESRI tiles, static assets, Google Identity, node URLs) passes straight to the saved `originalFetch`.
 - Builds a real `Request`, dispatches to `route(request, url)`, and returns a real `Response` — so all the existing client code (`src/runtime/library.js`, `src/runtime/assets.js`, `documentIO.js`, `basemapLibrary.js`) runs **unchanged**.
-- On throw: `SyntaxError` (bad JSON body) → `400`, anything else → `500` (mirrors Express body-parser behavior).
+- On throw: `SyntaxError` (bad JSON body) → `400`, anything else → `500`.
 
 > **Important boundary:** only `window.fetch` is patched. `<img src>`, `<link>`, XHR, `EventSource`, and PMTiles' own range reads that don't go through `fetch` all **bypass** the interceptor. This is exactly why cover images are embedded as `data:` URLs (see §6) rather than served as `/api/...` paths.
 
@@ -83,7 +83,7 @@ There is no Express server. `installWebApiRouter()` (`router.js:138`) replaces `
 ### Body handling (`readBody`, `router.js:20`)
 
 - `GET`/`HEAD` → no body.
-- **Asset uploads** (`isAssetUpload`: `scenarios`|`games` + an `assets` segment + `PUT`) are forced to **raw bytes** regardless of `Content-Type`, because colors/geojson arrive as `application/json` but must be stored **verbatim** (the server's `express.raw` does the same).
+- **Asset uploads** (`isAssetUpload`: `scenarios`|`games` + an `assets` segment + `PUT`) are forced to **raw bytes** regardless of `Content-Type`, because colors/geojson arrive as `application/json` but must be stored **verbatim** (round-tripping them through `JSON.parse`/`JSON.stringify` would re-format and bloat them).
 - Otherwise: `application/json` → `JSON.parse`; everything else → raw `Uint8Array`.
 
 ### The two branches that are *not* pure IndexedDB
@@ -97,7 +97,7 @@ There is no Express server. `installWebApiRouter()` (`router.js:138`) replaces `
 
 A dependency-free promise wrapper. Database `open-historia-web`, `DB_VERSION = 2`. Adding a store means bumping the version; `onupgradeneeded` creates only what is missing (additive — nobody's data is touched). An `onversionchange` handler closes this connection when another tab opens a newer version, so a second tab's upgrade isn't blocked.
 
-| Store (`STORES`) | keyPath | Mirrors server on-disk store |
+| Store (`STORES`) | keyPath | Contents |
 |---|---|---|
 | `scenarios` | `id` | one record per scenario (meta + json + assets) |
 | `games` | `id` | one record per game |
@@ -113,7 +113,7 @@ Helpers: `idbGet`, `idbGetAll`, `idbPut`, `idbDelete`, `idbUpdate` (read-modify-
 
 ## 5. The library store (`libraryStore.js`) — the heart of the fake backend
 
-A byte-faithful browser port of `server/libraryStore.js`. Backs `/api/library`, `/api/scenarios*`, `/api/games*`, `/api/runtime/json*`, `/api/runtime/pmtiles*`.
+The scenarios/games/runtime store, backed by IndexedDB. Backs `/api/library`, `/api/scenarios*`, `/api/games*`, `/api/runtime/json*`, `/api/runtime/pmtiles*`. (It was originally framed as a browser port of the deleted `server/libraryStore.js`; that Express store is gone, and this is now the only implementation.)
 
 ### Record shapes (all live in one IndexedDB record)
 
@@ -124,7 +124,7 @@ scenario:  { id, meta, json:{actions,advisor,chat,events,game,prompts,world},
 game:      { id, meta, json:{…7…}, colors?, flags?, snapshots?, cover?:{contentType,bytes} }
 ```
 
-Unlike the server (which splits a scenario across many files on disk), a web record holds `world`/`game`/`colors`/`geojson` together, so owner migration is **synchronous and in-place** — nothing to keep in step across files.
+A web record holds `world`/`game`/`colors`/`geojson` together in one object, so owner migration is **synchronous and in-place** — there are no separate files to keep in step (the deleted Express store used to split a scenario across many files on disk; this design collapses them).
 
 ### Manifests (in `kv`)
 
@@ -152,7 +152,7 @@ Unlike the server (which splits a scenario across many files on disk), a web rec
 
 ### Owner-schema migration (`ensureOwnerSchema`, `:357`)
 
-Rewrites a record whose owners are GADM codes into one keyed by country **names**. It *imports* `server/ownerMigration.js` (pure ESM, so Vite bundles it) rather than re-implementing it — one resolver, no drift. Runs lazily on read, once per `kind:id` (`migratedRecords` set), and discards roll-back `snapshots` (they predate the rename and are blind-written back with no staleness marker).
+Rewrites a record whose owners are GADM codes into one keyed by country **names**. It *imports* `src/runtime/shared/ownerMigration.js` (pure ESM, so Vite bundles it) rather than re-implementing it — one resolver, no drift. (That module was relocated from the deleted `server/ownerMigration.js`; its test is `src/runtime/shared/ownerMigration.test.js`.) Runs lazily on read, once per `kind:id` (`migratedRecords` set), and discards roll-back `snapshots` (they predate the rename and are blind-written back with no staleness marker).
 
 ### Export / import bundles
 
@@ -166,15 +166,11 @@ If the `seeded` kv flag is unset and no `default` scenario exists, write `defaul
 
 ---
 
-## 6. Cover images — and why they differ from the server
+## 6. Cover images — and why the web build embeds them as `data:` URLs
 
-`COVER_IMAGE_ASSET_KEY = "cover"`; a cover is stored on the record as `{ contentType, bytes:Uint8Array }`. The **displayed** cover in a catalog summary differs by build:
+`COVER_IMAGE_ASSET_KEY = "cover"`; a cover is stored on the record as `{ contentType, bytes:Uint8Array }`. The **displayed** cover in a catalog summary is a **base64 `data:` URL** via `coverDataUrl(record.cover)` (`libraryStore.js:60`, used at `:181`, `:222`, `:229`).
 
-| | Server build | Web build |
-|---|---|---|
-| `coverImageUrl` value | a **fetchable path** via `buildScenarioAssetUrl(id,"cover",token)` → `/api/scenarios/:id/assets/cover?token=…` (`server/libraryStore.js:1173`) | a **base64 `data:` URL** via `coverDataUrl(record.cover)` (`libraryStore.js:60`, used at `:181`, `:222`, `:229`) |
-
-**Why:** the library UI renders the cover in an `<img src>`. On the server that `src` is a normal HTTP URL the browser fetches directly. In the web build there is no server, and — critically — an `<img>` load does **not** pass through the patched `window.fetch`, so a `/api/scenarios/:id/assets/cover` `src` would hit the network and 404 to the SPA fallback instead of reaching the interceptor. Embedding the bytes as a `data:<contentType>;base64,…` URL makes the image render with **zero network round-trip**, straight from the IndexedDB record. (The interceptor *does* still serve a direct `GET /api/scenarios/:id/assets/cover` — `scenarioAssetResponse`, `:817` — for code paths that go through `fetch`, e.g. export; it's only the `<img>` display path that needs the data URL.)
+**Why:** the library UI renders the cover in an `<img src>`. The `<img>` load does **not** pass through the patched `window.fetch` interceptor (see §3's boundary note), so a `/api/scenarios/:id/assets/cover` `src` would hit the network and 404 to the SPA fallback instead of ever reaching the interceptor. Embedding the bytes as a `data:<contentType>;base64,…` URL makes the image render with **zero network round-trip**, straight from the IndexedDB record. (The interceptor *does* still serve a direct `GET /api/scenarios/:id/assets/cover` — `scenarioAssetResponse`, `:817` — for code paths that go through `fetch`, e.g. export; it's only the `<img>` display path that needs the data URL.)
 
 Cover uploads/removals (`uploadScenarioAsset`/`uploadGameAsset`, `:783`/`:838`) validate the content-type against `SUPPORTED_IMAGE_CONTENT_TYPES` (avif/gif/jpeg/png/webp) and mirror the bytes + `coverImageContentType` meta.
 
@@ -182,7 +178,7 @@ Cover uploads/removals (`uploadScenarioAsset`/`uploadGameAsset`, `:783`/`:838`) 
 
 ## 7. Store models & country resolution (`models.js`)
 
-A faithful mirror of the constants and pure helpers in `server/libraryStore.js`.
+The constants and pure helpers for the web store (asset-key sets, `resolveOwnerRef`, the meta readers). These were originally a browser mirror of the deleted `server/libraryStore.js`; that Express store is gone, and `models.js` is now the only implementation of these constants.
 
 ### Asset-key sets
 
@@ -287,8 +283,8 @@ Optional, web-only. The registry Worker only ever stores **ciphertext** and the 
 Full-scan model (compare local SHA-256 vs last-synced version), so no write can be missed. **v1 scope = games + scenarios + their catalog manifests** (map-editor docs and basemaps wait for R2). Each record → one blob (`games:<id>`, `scenarios:<id>`, `kv:<manifest>`).
 
 - `syncNow()` (`:128`) runs `pull` then `push`, persisting `sync:versions` (`{blob_id:{version,sha?,deleted?}}`, device-local, never synced). Emits `oh:sync` events (`syncing`/`ok`/`error`) — but only flashes "Syncing…" once **real** work starts, so an empty 20 s poll doesn't look like a phantom upload.
-- `pull`: apply any server blob newer than known version (decrypt → `idbPut`/`kvPut`), or tombstone deletions. A single bad blob is caught per-item so it can't red-line the whole sync.
-- `push`: upload locally-changed records (`sha` differs); on **409 conflict** it's **last-writer-wins = take the server copy**; `413` = too large (waits for R2); then tombstone records gone locally.
+- `pull`: apply any newer sync blob than the known version (decrypt → `idbPut`/`kvPut`), or tombstone deletions. A single bad blob is caught per-item so it can't red-line the whole sync. (The "server" here is the registry Worker's `/sync/*` endpoints — the only always-on backend, storing ciphertext only.)
+- `push`: upload locally-changed records (`sha` differs); on **409 conflict** it's **last-writer-wins = take the Worker's copy**; `413` = too large (waits for R2); then tombstone records gone locally.
 - `startSync()` runs `syncNow` immediately, every 20 s, and on tab `visibilitychange`→hidden.
 
 ### Transport endpoints (session-authed, `Bearer <session>`)
@@ -325,20 +321,22 @@ The interceptor also answers these through the same `ctx` handler pattern (retur
 
 ---
 
-## 12. Key differences vs the server build
+## 12. Architecture notes (the web build's shape)
 
-| Aspect | Server build | Web build |
-|---|---|---|
-| Backend | real Express server, same-origin | `window.fetch` interceptor (`router.js`), no server |
-| Persistence | files on disk (`server/libraryStore.js` etc.) | one IndexedDB record per item (`idb.js`) |
-| Record layout | scenario split across many files | `world`/`game`/`colors`/`geojson`/`cover` in **one** record |
-| Owner migration | must keep files in step; async | synchronous, in-place; **imports** `server/ownerMigration.js` |
-| Cover image URL | fetchable `/api/.../assets/cover?token=` | base64 `data:` URL (bypasses the fetch interceptor) — see §6 |
-| PMTiles hosting | served by the server | Worker CORS+range proxy + hash-verified node swarm; default `regions.geojson` fetched from the content origin, not seeded |
-| Default scenario | full data on disk | seeded from `generated/defaultScenario.js`; big geometry fetched on demand |
-| Accounts / sync | n/a | magic-link/Google + AES-256-GCM E2E sync (`account.js`/`sync.js`) |
-| Community bundle download | direct | proxied via Worker `/hub/file` or a connected node (CORS) |
-| Code shipped | this whole tree stripped out | this whole tree, behind `VITE_OH_WEB` |
+There is no server build to compare against anymore. For reference, the web build's shape is:
+
+| Aspect | Web build |
+|---|---|
+| Backend | a `window.fetch` interceptor (`router.js`) answers same-origin `/api/*` from IndexedDB; there is no server process |
+| Persistence | one IndexedDB record per item (`idb.js`, `open-historia-web` database) |
+| Record layout | `world`/`game`/`colors`/`geojson`/`cover` all live in **one** record |
+| Owner migration | synchronous and in-place (records are single-object); **imports** `src/runtime/shared/ownerMigration.js` (relocated from the deleted `server/`) |
+| Cover image URL | base64 `data:` URL (bypasses the fetch interceptor for `<img>`) — see §6 |
+| PMTiles hosting | registry Worker CORS+range proxy + hash-verified content-node swarm; the default `regions.geojson` is fetched from the content origin on demand, not seeded |
+| Default scenario | seeded from `generated/defaultScenario.js`; big geometry fetched on demand |
+| Accounts / sync | optional magic-link/Google + AES-256-GCM E2E sync through the registry Worker (`account.js`/`sync.js`); the Worker stores ciphertext only |
+| Community bundle download | proxied via the Worker `/hub/file` or a connected content node (CORS, since GitHub attachments send no CORS) |
+| Gating | the whole `src/runtime/web/**` tree is behind `VITE_OH_WEB`; since `--mode web` is the only build mode, it's always in the bundle |
 
 ---
 
@@ -361,5 +359,5 @@ The interceptor also answers these through the same `ctx` handler pattern (retur
 | `src/runtime/web/nodeConnect.js` | node selection + heartbeat + presence |
 | `src/runtime/web/settingsStore.js` | ui-settings + language handlers |
 | `src/runtime/web/basemapStore.js` / `flagStore.js` / `editorStore.js` | secondary store handlers |
-| `trust/pinned-key.js` | pinned root public key(s) |
+| `src/runtime/web/trust/pinned-key.js` | pinned root public key(s) |
 | `.env.web` | web-mode build config |

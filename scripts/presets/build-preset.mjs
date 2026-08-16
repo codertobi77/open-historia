@@ -14,13 +14,13 @@ import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { loadRegionCatalog, buildCountryRegionIndex } from "./lib/regionCatalog.mjs";
 import COUNTRY_NAMES from "../../src/runtime/generated/countryNames.js";
-import { OWNER_SCHEMA } from "../../server/ownerMigration.js";
+import { OWNER_SCHEMA } from "../../src/runtime/shared/ownerMigration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
-const SCENARIOS_DIR = path.join(PROJECT_ROOT, "server", "data", "scenarios");
+const SCENARIOS_DIR = path.join(PROJECT_ROOT, "data", "scenarios");
 const DEFAULT_SCENARIO_DIR = path.join(SCENARIOS_DIR, "default");
-const MANIFEST_PATH = path.join(PROJECT_ROOT, "server", "data", "scenario-manifest.json");
+const MANIFEST_PATH = path.join(PROJECT_ROOT, "data", "scenario-manifest.json");
 const BASE_COLORS_PATH = path.join(PROJECT_ROOT, "public", "assets", "colors.json");
 const REGIONS_SEED_PATH = path.join(PROJECT_ROOT, "public", "assets", "regions-seed.geojson");
 

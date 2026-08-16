@@ -1,9 +1,10 @@
 /*! Open Historia — web-mode UI settings + language packs © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
-// Mirrors the server's /api/ui-settings and /api/lang endpoints (server/server.js:150-236)
-// for the web build. Shipped language packs (public/lang/<code>.json — copied to the
-// deployed site by Vite) are merged UNDER the browser's IndexedDB overlay of
-// AI-generated translations, exactly like the server merges shipped + saved packs.
-// UI settings persist in IndexedDB. Only bundled into the web build (VITE_OH_WEB).
+// Web-mode UI settings + language packs. Originated as the browser port of the
+// removed Express server's /api/ui-settings and /api/lang endpoints. Shipped
+// language packs (public/lang/<code>.json — copied to the deployed site by Vite)
+// are merged UNDER the browser's IndexedDB overlay of AI-generated translations,
+// exactly like the server merged shipped + saved packs. UI settings persist in
+// IndexedDB. Only bundled into the web build (VITE_OH_WEB).
 
 import { kvGet, kvUpdate } from "./idb.js";
 import { jsonResponse, errorResponse } from "./util.js";
@@ -39,7 +40,7 @@ const loadShippedPack = async (code) => {
 };
 
 // GET/PUT /api/lang/:code — merged shipped pack + IndexedDB overlay (GET), and
-// upsert AI-generated translations into the overlay (PUT), matching the server's
+// upsert AI-generated translations into the overlay (PUT), matching the
 // { entries } body and 3000/6000-char caps.
 export const handleLang = async (ctx) => {
   const code = String(ctx.segments[0] || "").toLowerCase();

@@ -13,6 +13,6 @@ const entries = {};
 for (const country of await loadCountryCatalog()) {
   if (country.GID_0 && country.COUNTRY) entries[country.GID_0] = country.COUNTRY;
 }
-const out = path.join(ROOT, "server", "country-names.json");
+const out = path.join(ROOT, "data", "country-names.json");
 writeFileSync(out, JSON.stringify(entries, null, 1));
 console.log(`server/country-names.json: ${Object.keys(entries).length} countries`);

@@ -2161,7 +2161,7 @@ const LibraryTopBar = () => {
           <div style={{ fontSize: "2.2rem" }}>⏻</div>
           <div style={{ fontSize: "1.2rem", fontWeight: 800 }}>Server stopped</div>
           <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.85rem", maxWidth: "22rem" }}>
-            You can close this tab now. Run the launcher (or <code>node server/server.js</code>) to start it again.
+            You can close this tab now. Restart the local server to start it again.
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 # AI System Overview
 
-Open Historia drives every generative feature — the strategy advisor, leader diplomacy, timeline simulation, catalysts, stat sheets, and the game‑master console — through a single browser‑side AI layer under `src/Game/AI/`. The player's own API key talks **directly** to their chosen provider from the browser; there is no Open Historia backend in the loop except an optional same‑origin relay that only exists when the page is served from a machine the player controls. Two entry points sit on top of the transport: `callAI` for free‑form chat, and `runJsonTask` for schema‑validated structured "tasks" that mutate world state.
+Open Historia drives every generative feature — the strategy advisor, leader diplomacy, timeline simulation, catalysts, stat sheets, and the game‑master console — through a single browser‑side AI layer under `src/Game/AI/`. The player's own API key talks **directly** to their chosen provider from the browser; there is no Open Historia backend in the loop. On the hosted website (openhistoria.com) every call is browser→provider direct — no Open Historia server or community node ever sees the key. The repo's web build ships **no** relay at all. An optional same‑origin `/api/ai/relay` code path exists only for a **self‑hosted local install** that runs its own relay (the path is gated by `PAGE_IS_LOCAL` and is never taken on openhistoria.com). Two entry points sit on top of the transport: `callAI` for free‑form chat, and `runJsonTask` for schema‑validated structured "tasks" that mutate world state.
 
 This page documents the plumbing. For the prompt templates and how they are assembled, see [AI prompts](ai-prompts.md); for the JSON tool/response schemas and per‑field meaning, see [AI schemas](ai-schemas.md); for what the applied changes touch, see [World state](world-state.md).
 
@@ -32,7 +32,7 @@ Defined in `PROVIDER_OPTIONS` at `src/Game/AI/providerConfig.js:4`. The selected
 | `anthropic-compatible` | Anthropic Compatible | Gateways & self‑hosted | `callAnthropicCompatible` (`main.jsx:858`) | user `endpoint` | `providerFetch` | no |
 | `nvidia-nim-compatible` | NVIDIA NIM (OpenAI Compatible) | Gateways & self-hosted | `callNvidiaCompatible` (`main.jsx`) | user `endpoint` (default `https://integrate.api.nvidia.com/v1`) | `providerFetch` | yes |
 
-`callAI` (`main.jsx:942`) is the single switch over `getStoredProvider()`; `gemini` is the `default` branch. Before dispatch it appends a language directive (`languageDirective()`, [i18n](i18n.md)) so replies come back in the player's language at the source.
+`callAI` (`main.jsx:942`) is the single switch over `getStoredProvider()`; `gemini` is the `default` branch. Before dispatch it appends a language directive (`languageDirective()`, anchored on `localStorage["ui_language"]` and the bundled language packs) so replies come back in the player's language at the source.
 
 "OpenAI Compatible" is the catch‑all for Ollama, LM Studio, OpenRouter, vLLM, and other gateways speaking `/chat/completions`. "Anthropic Compatible" is a self‑hosted proxy speaking the Anthropic Messages API. Both share their native sibling's caller body but read a different settings namespace and are relay‑capable.
 
@@ -78,14 +78,14 @@ If a provider rejects `tools` + `reasoning_effort` together (documented 400/422)
 
 ---
 
-## Where the key goes: direct calls, origin, and the relay
+## Where the key goes: direct calls, origin, and the relay path
 
 The whole security model is in the comment block at `main.jsx:225`. AI calls go **straight from the browser to the provider** so the player's key only ever reaches the provider — never an Open Historia server or a community node. Direct is always tried first.
 
-- **`PAGE_IS_LOCAL`** (`main.jsx:250`, from `isLocallyServed()`): true when the page is served from a machine the player controls — `localhost`/`127.0.0.1`/`::1`/`*.local` or the LAN private ranges `10.*`, `192.168.*`, `172.16–31.*`. The LAN ranges cover the Android client, which loads the UI from a local server on the home network.
-- **`providerFetch(url, options)`** (`main.jsx:303`): tries `directFetch`; on a CORS/network `TypeError` (not an abort) **and** only when `PAGE_IS_LOCAL`, it remembers the origin in `relayOnlyOrigins` and retries through the same‑origin `/api/ai/relay` (`relayFetch`, `main.jsx:284`). A remembered origin skips the doomed direct attempt on later calls.
-- On a **hosted website** there is no relay: every call is direct‑only and the key is never handed to anything but the provider. If a hosted page tries to reach a **local** backend (Ollama/LM Studio) and the browser rejects it, `providerFetch` throws an actionable error telling the user to set `OLLAMA_ORIGINS`/enable CORS (`main.jsx:321`).
-- **Who uses the relay**: only the `providerFetch` callers — `openai`, `openai-compatible`, `anthropic-compatible`, `nvidia`, `nvidia-nim-compatible`, and model discovery (`GET /models`). **Native Gemini and native Anthropic bypass `providerFetch` entirely** (plain `fetch`), because both explicitly allow browser calls (Anthropic via the `anthropic-dangerous-direct-browser-access: true` header, `main.jsx:795`). They are therefore always direct, relay or not.
+- **`PAGE_IS_LOCAL`** (`main.jsx:250`, from `isLocallyServed()`): true when the page is served from a machine the player controls — `localhost`/`127.0.0.1`/`::1`/`*.local` or the LAN private ranges `10.*`, `192.168.*`, `172.16–31.*`. The LAN ranges let a self-hosted local install serve the UI from a home-network machine (the hosted site is never in this state).
+- **`providerFetch(url, options)`** (`main.jsx:303`): tries `directFetch`; on a CORS/network `TypeError` (not an abort) **and** only when `PAGE_IS_LOCAL`, it remembers the origin in `relayOnlyOrigins` and retries through the same‑origin `/api/ai/relay` (`relayFetch`, `main.jsx:284`). A remembered origin skips the doomed direct attempt on later calls. Because `PAGE_IS_LOCAL` is false on the hosted site, **this relay branch is dead code there** — the `/api/ai/relay` path is only ever exercised by a self-hosted local install that runs its own relay; the repo's web build ships no such relay.
+- On **openhistoria.com** every call is browser→provider direct; the key is never handed to anything but the provider. If the hosted page tries to reach a **local** backend (Ollama/LM Studio) and the browser rejects it, `providerFetch` throws an actionable error telling the user to set `OLLAMA_ORIGINS`/enable CORS (`main.jsx:321`) — a browser-side CORS configuration on the player's local AI server, not an Open Historia endpoint.
+- **Who uses the relay path**: only the `providerFetch` callers — `openai`, `openai-compatible`, `anthropic-compatible`, `nvidia`, `nvidia-nim-compatible`, and model discovery (`GET /models`). **Native Gemini and native Anthropic bypass `providerFetch` entirely** (plain `fetch`), because both explicitly allow browser calls (Anthropic via the `anthropic-dangerous-direct-browser-access: true` header, `main.jsx:795`). They are therefore always direct, with or without a relay.
 
 `isLocalEndpoint(url)` (`main.jsx:269`) is the per‑endpoint sibling of `PAGE_IS_LOCAL`; it also gates local streaming (below).
 
@@ -239,7 +239,7 @@ Once a payload is accepted (region ids already canonicalized in place), the expo
 - **GM command**: `applyGameMasterCommand` (`gameplay.js:1949`) turns the payload into a single GM event and applies its impacts the same way.
 - The `generation` object (`{ source: "ai" | "fallback", fallbackReason }`) rides along into `simulationHistory` so the UI can show whether a turn was AI‑ or fallback‑generated.
 
-See [World state](world-state.md) for the shape of what these writers touch, and [Game state persistence](game-state.md) for the read/write bundle helpers.
+See [World state](world-state.md) for the shape of what these writers touch, and [Runtime services](runtime-services.md) for the read/write bundle helpers and `/api/*` plumbing.
 
 ---
 

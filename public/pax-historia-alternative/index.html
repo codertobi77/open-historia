@@ -38,11 +38,11 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
+    "@type": "WebApplication",
     "name": "Open Historia",
     "applicationCategory": "GameApplication",
-    "operatingSystem": "Windows, macOS, Linux, Android",
-    "description": "Open Historia is a free, open-source grand strategy game and community-driven alternative to Pax Historia. Features AI-powered diplomacy, a full vector map editor, custom scenarios, troop combat, and cross-platform play. Self-hostable under the MIT license.",
+    "operatingSystem": "Any (runs in a web browser)",
+    "description": "Open Historia is a free, open-source grand strategy game and community-driven alternative to Pax Historia. Features AI-powered diplomacy, a full vector map editor, custom scenarios, troop combat, and browser-based cross-platform play. Self-hostable under the MIT license.",
     "url": "https://openhistoria.com/pax-historia-alternative/",
     "offers": {
       "@type": "Offer",
@@ -103,15 +103,15 @@
         "name": "Can I play Open Historia offline?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Once installed, Open Historia runs entirely offline. If you connect a local LLM like Ollama or LM Studio, even AI features work without an internet connection."
+          "text": "Yes. Self-host the Open Historia web build on your own machine and it runs entirely offline. If you connect a local LLM like Ollama or LM Studio, even AI features work without an internet connection."
         }
       },
       {
         "@type": "Question",
-        "name": "Is there an Android version?",
+        "name": "Does it work on mobile?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. A thin client APK is available that connects to a running Open Historia server. Download it from the Android release page on GitHub. The game logic runs on the server; the APK is a remote display client."
+          "text": "Yes. Open Historia runs in any modern mobile browser — open the same URL and the layout and touch controls adapt to the screen."
         }
       },
       {
@@ -135,7 +135,7 @@
     <img class="logo" src="/logo.png" alt="Open Historia logo" width="64" height="64" />
 
     <h1>Open Historia — The Free Pax Historia Alternative</h1>
-    <p class="tagline">Open Historia is a free, open-source grand strategy game — a community-driven alternative to Pax Historia — with AI-powered diplomacy, a full vector map editor, custom scenarios, troop combat, and cross-platform play. No purchase, no subscriptions, no DRM — just download and play.</p>
+    <p class="tagline">Open Historia is a free, open-source grand strategy game — a community-driven alternative to Pax Historia — with AI-powered diplomacy, a full vector map editor, custom scenarios, troop combat, and cross-platform play right in your browser. No purchase, no subscriptions, no DRM — just open it and play.</p>
 
     <h2>Why Switch from Pax Historia?</h2>
     <div class="card">
@@ -218,13 +218,8 @@
         </tr>
         <tr>
           <td>Platform support</td>
-          <td><span class="check">Windows, macOS, Linux, Android</span></td>
+          <td><span class="check">Any modern web browser (desktop & mobile)</span></td>
           <td>Windows, macOS</td>
-        </tr>
-        <tr>
-          <td>Android app</td>
-          <td><span class="check">Thin client APK available</span></td>
-          <td><span class="cross">Not available</span></td>
         </tr>
         <tr>
           <td>Modding</td>
@@ -237,8 +232,13 @@
           <td><span class="cross">Company-controlled</span></td>
         </tr>
         <tr>
+          <td>Mobile play</td>
+          <td><span class="check">Plays in any mobile browser</span></td>
+          <td><span class="cross">Not available</span></td>
+        </tr>
+        <tr>
           <td>Offline play</td>
-          <td><span class="check">Fully offline after installation</span></td>
+          <td><span class="check">Fully offline when self-hosted</span></td>
           <td>Requires connection</td>
         </tr>
       </tbody>
@@ -296,14 +296,14 @@
       <div class="feature-tag">Self-hosters who want to run their own game server</div>
       <div class="feature-tag">Scenario creators and world-builders</div>
       <div class="feature-tag">Players who value open-source software and community ownership</div>
-      <div class="feature-tag">Android users wanting a grand strategy game on mobile</div>
+      <div class="feature-tag">Mobile players who want a grand strategy game that runs in their browser</div>
       <div class="feature-tag">AI enthusiasts interested in LLM-powered game mechanics</div>
     </div>
 
     <h2>How to Switch from Pax Historia</h2>
     <div class="step">
-      <strong>1. Download Open Historia for free</strong>
-      <p>No account, no payment, no registration. Just <a href="/get-started/">download and run the launcher</a> for your platform.</p>
+      <strong>1. Open Open Historia for free</strong>
+      <p>No account, no payment, no registration. Just <a href="/get-started/">open it in your browser</a> and start playing.</p>
     </div>
     <div class="step">
       <strong>2. Connect an AI backend (optional but recommended)</strong>
@@ -332,12 +332,12 @@
 
     <div class="card">
       <h3>Can I play Open Historia offline?</h3>
-      <p>Yes. Once installed, Open Historia runs <strong>entirely offline</strong>. If you connect a local LLM (like Ollama or LM Studio), even AI features work without an internet connection. See the <a href="/self-hosting/">self-hosting guide</a>.</p>
+      <p>Yes. If you <a href="/self-hosting/">self-host the web build</a> on your own machine, Open Historia runs <strong>entirely offline</strong>. If you connect a local LLM (like Ollama or LM Studio), even AI features work without an internet connection.</p>
     </div>
 
     <div class="card">
-      <h3>Is there an Android version?</h3>
-      <p>Yes. A <strong>thin client APK</strong> is available that connects to a running Open Historia server. Download it from the <a href="https://github.com/Open-Historia/open-historia/releases/tag/android" target="_blank" rel="noopener">Android release page</a>. The game logic runs on the server; the APK is a remote display client.</p>
+      <h3>Does it work on mobile?</h3>
+      <p>Yes. Open Historia runs in any modern mobile browser — open the same URL and the layout and touch controls adapt to the screen. No app to install.</p>
     </div>
 
     <div class="card">
@@ -348,8 +348,8 @@
     <h2>Ready to Play?</h2>
     <p>Open Historia is the best free alternative to Pax Historia — with AI-powered diplomacy, a full map editor, community scenarios, and cross-platform play. All free, all open-source, all community-driven.</p>
 
-    <a href="/get-started/" class="cta">Download and Play Free</a>
-    <a href="/" class="cta cta-secondary" style="margin-left: 0.75rem;">Play in Browser</a>
+    <a href="/" class="cta">Play Open Historia in your browser</a>
+    <a href="/get-started/" class="cta cta-secondary" style="margin-left: 0.75rem;">Get started</a>
 
     <footer>
       <p>Open Historia — free, open-source grand strategy game. <a href="https://github.com/Open-Historia/open-historia" target="_blank" rel="noopener">GitHub</a> · <a href="https://discord.gg/C3AVwHacZ4" target="_blank" rel="noopener">Discord</a> · <a href="/sitemap.xml">Sitemap</a></p>

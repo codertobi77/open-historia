@@ -13,7 +13,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, renameSync, rmSync 
 import { createHash } from "node:crypto";
 import path from "node:path";
 import url from "node:url";
-import { verifySignedManifest } from "../server/trust.js";
+import { verifySignedManifest } from "../tools/content-node/trust.js";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
 const BASE_URL = (process.env.OH_UPDATE_BASE_URL || "").replace(/\/$/, "");

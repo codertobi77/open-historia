@@ -56,7 +56,7 @@ The in-game UI is a flat set of `position: fixed` React components layered over 
 | `LibraryTopBar` | `libraryBar.jsx` | Main menu + game/scenario editor + country picker + map-editor host + server shutdown |
 | `DateWidget` | `time.jsx` | Date/country pill + timeline-skip + event-history panels |
 | `Toolbar` | `chat.jsx` | Bottom-left cluster: 💬 Chat + ✦ Actions launchers |
-| `Other` | `other.jsx` | Player-country flag badge (desktop only) |
+| `Other` | `other.jsx` | Player-country flag badge (non-mobile layout) |
 | `Search` | `search.jsx` | Place search (Nominatim) → `map.flyTo` |
 | `ForcesPanel` | `forces.jsx` | Unit list + deploy controls + mode banner |
 | `AdvisorButton` (🧭) | `main.jsx` (inline) | Toggles the advisor drawer; sits at `rightShift` |
@@ -207,7 +207,7 @@ When the Scenarios tab shows any scenario carrying `hubOrigin`, an effect (`libr
 
 ### 4.8 In-game floating cluster & server shutdown
 
-When the menu is closed, `LibraryTopBar` renders a compact cluster (z 9997): a session-summary pill (`summaryText` = name / country / date), **⌂ Exit Game** (→ `setMenuOpen(true)`), and **⏻** (`handleShutdownServer` → `POST /api/server/shutdown`, then a full-screen "Server stopped" overlay at z 20000). Desktop lays them out top-left of the date widget; phones stack **⌂**/**⏻** vertically in the left gutter. **⏻** is stripped from the web build (`!import.meta.env.VITE_OH_WEB`).
+When the menu is closed, `LibraryTopBar` renders a compact cluster (z 9997): a session-summary pill (`summaryText` = name / country / date), **⌂ Exit Game** (→ `setMenuOpen(true)`), and **⏻** (in a self-hosted local install that runs its own server, `handleShutdownServer` → `POST /api/server/shutdown` then a full-screen "Server stopped" overlay at z 20000). The non-mobile layout places them top-left of the date widget; phones stack **⌂**/**⏻** vertically in the left gutter. **⏻** is stripped from the web build (`!import.meta.env.VITE_OH_WEB`) since there is no server process to shut down — it only appears in a self-hosted local install that runs its own server.
 
 ---
 
@@ -244,7 +244,7 @@ The drag handler lives in the drawer (`advisor.jsx:202`): on `pointerdown` it ca
 | Render | Flag/initials header, national stability bar, 6 strategic indices (`INDEX_ROWS`), economy cards (`compactEconomyValue` trims 30000000000→30.0B), GDP breakdown bar | — |
 | Flag logic | author flag (`flags.json`) > polity flag > code-derived — but a **landless player** never borrows a code-derived flag (`isPolityLandless`) | `src/runtime/countryFlags.js` |
 
-`Other` (`other.jsx`) is the standalone player-country flag badge at bottom-right (desktop only; hidden on mobile because the date widget already shows the country). It polls `JSON_URLS.game` + world every 5 s and applies the same landless-suppression logic; falls back emoji → `FallbackBadge` initials for non-ISO polities.
+`Other` (`other.jsx`) is the standalone player-country flag badge at bottom-right, shown on the non-mobile (desktop) layout and hidden on mobile because the date widget already shows the country. It polls `JSON_URLS.game` + world every 5 s and applies the same landless-suppression logic; falls back emoji → `FallbackBadge` initials for non-ISO polities.
 
 ---
 
@@ -340,7 +340,7 @@ Ownership/name resolution is done in **one namespace** (country display name) �
 |---|---|---|
 | AI Provider | `ApiProviderSelector` — searchable catalog of `PROVIDER_OPTIONS` | `onApiProviderChange`→`Main.apiProvider`→`localStorage["api_provider"]` |
 | Provider settings | `ProviderSettingsPanel` — per-provider API key/model/custom-params (gemini, openai, anthropic, nvidia, openai-compatible, anthropic-compatible, nvidia-nim-compatible) + global **Model reasoning** toggle; the **Model** field for discovery-capable providers (openai, openai-compatible, nvidia, nvidia-nim-compatible) is a `ModelPicker` that fetches `GET {endpoint}/models` and lets the player pick or leave blank to auto-pick | `persistProviderSetting` (browser localStorage); `setReasoningEnabled`; `ModelPicker` calls `discoverModels` (`src/Game/AI/main.jsx`) |
-| Language | `LanguageSelector` — searchable; applying reloads the page | `setStoredLanguage` (server + browser) |
+| Language | `LanguageSelector` — searchable; applying reloads the page | `setStoredLanguage` (shared `/api/ui-settings` endpoint + browser localStorage) |
 | Display | **Fullscreen**, **3D Globe**, **3D Terrain** (labeled "Very Experimental") toggles | `Main` toggles / `App.jsx` state |
 | Map | Hide country labels, **Reduce motion** (umbrella over the two below), Disable idle globe rotation, Disable camera movement during events | `setMapSetting(MAP_SETTING_KEYS.*)` (`src/runtime/mapSettings.js`) |
 | AI | **Limit AI generation** (5-min cap then canned fallback vs. wait-as-long-as-needed) | `MAP_SETTING_KEYS.limitAiGeneration` |
@@ -391,12 +391,12 @@ The library bar now exposes a dedicated **Scenario Studio** tab (`libraryBar.jsx
 | 14 | Forces panel + mode banner | `forces.jsx` | panel | `Main.isForcesOpen` | units, allowed types, player code | `setInteractionMode`/`clearInteractionMode`, `map.flyTo` |
 | 15 | Cheats panel + tools | `cheats.jsx` | panel | `Main.isCheatsOpen` (+ `shouldLoadCheats`) | world/game/events/catalogs | many `writeWorldState`/`writeGameData`/`writeJson`, `applyGameMasterCommand`, `setRegionClickInterceptor` |
 | 16 | Search box | `search.jsx` | widget | local `expanded` | Nominatim | `map.flyTo` |
-| 17 | Player flag badge | `other.jsx` | badge | always (desktop) | `JSON_URLS.game`, world | — |
+| 17 | Player flag badge | `other.jsx` | badge | always (non-mobile layout) | `JSON_URLS.game`, world | — |
 | 18 | Main menu (Games/Scenarios/Community) | `libraryBar.jsx` | full page | `menuOpenDefault` | `useLibraryState`, hub posts | `activateGame`, `createGame/Scenario`, catalog refresh |
 | 19 | Game/Scenario editor drawer | `libraryBar.jsx` | panel | `editorKind`/`editorDetails` | scenario/game details | `saveScenario`/`saveGame`, asset up/clear, `exportScenarioBundle` |
 | 20 | Country / faction picker | `libraryBar.jsx` | modal | `countryPicker` | country options, custom regions | `createGame`, `saveGame`, `activateGame` |
 | 21 | Map editor host | `libraryBar.jsx` | overlay | `isMapEditorOpen` | scenario assets | `applyMapToScenario` → many asset writes + new game |
-| 22 | ⌂ Exit Game / ⏻ shutdown / summary | `libraryBar.jsx` | cluster | `!menuOpen` | `activeGame` | `setMenuOpen(true)`, `POST /api/server/shutdown` |
+| 22 | ⌂ Exit Game / ⏻ shutdown / summary | `libraryBar.jsx` | cluster | `!menuOpen` | `activeGame` | `setMenuOpen(true)`, `POST /api/server/shutdown` (self-hosted local install only; stripped from the web build) |
 | 23 | Community hub tab | `communityHub.jsx` | panel | menu tab | GitHub hub API, `/api/hub/*` | `downloadHubBundle`+`importScenarioBundle`, publish/export |
 | 24 | Scenario Studio tab | `scenarios.jsx` + `ScenarioCreatorView.jsx` + `ScenarioHub.jsx` | full page | library tab | `useScenarioState`, scenario assets | `createScenario`/`saveScenario`/`uploadScenarioAsset`, hub issue link |
 

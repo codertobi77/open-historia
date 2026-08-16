@@ -56,10 +56,10 @@ const nodeSources = new WeakMap();
 
 const cacheKey = () => `${CACHE_PREFIX}${language}`;
 
-// New translations are pushed to the server's language pack (debounced), so
-// every device — and every future session — reuses them instead of paying
-// for the same AI call again. The pack lives under server/data, which the
-// update script never touches.
+// New translations are pushed to the shared language pack (debounced) so every
+// future session in this browser reuses them instead of paying for the same AI
+// call again. On the web build the PUT /api/lang handler stores them in
+// IndexedDB; shipped packs are static JSON Vite deploys beside the bundle.
 const syncEntriesToServer = () => {
   clearTimeout(syncTimer);
   syncTimer = setTimeout(async () => {
@@ -589,9 +589,10 @@ export const startTranslator = () => {
     return;
   }
 
-  // The server's stored choice wins over this device's copy, so a language
-  // picked on desktop applies in the Android app (and vice versa). Runs even
-  // when this device thinks it's English — a fresh install has no local copy.
+  // The stored language choice is pulled from the shared UI-settings store (the
+  // /api/ui-settings handler, backed by IndexedDB on the web build) so it sticks
+  // across reloads in this browser. Runs even when this browser thinks it's
+  // English — a fresh install has no local copy.
   void syncLanguageFromServer().then((changed) => {
     if (changed) {
       window.location.reload();

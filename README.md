@@ -62,96 +62,41 @@
 your browser, and you bring your own AI key (it goes straight to your provider, never to
 us). The world map is served by the community [content-node network](https://github.com/Open-Historia/open-historia-node).
 
-Local AI (Ollama, LM Studio) needs one extra step in the browser: the server has to allow
-the site's origin, e.g. start Ollama with `OLLAMA_ORIGINS=https://openhistoria.com`. The
-desktop app below needs no such setup.
+Local AI (Ollama, LM Studio) needs one extra step in the browser: the local server has
+to allow the site's origin, e.g. start Ollama with
+`OLLAMA_ORIGINS=https://openhistoria.com`. Calls go straight browser → provider; nothing
+reaches us.
 
-### Desktop (offline, single-player)
+### Manual (self-host / local dev)
 
-Download **[`Open-Historia.zip`](https://github.com/Open-Historia/open-historia/releases/tag/app-stable)**
-(~186 MB — code *and* all map data), unzip it anywhere, then:
-
-- **Windows:** run **`Open-Historia-Setup.exe`**, then open Open Historia from the Start Menu
-- **macOS:** unzip and drag **Open Historia** to Applications (first run: right-click -> *Open*)
-- **Linux:** `chmod +x Open-Historia-x86_64.AppImage` and run it
-
-The launcher checks Node.js, downloads the map data, installs dependencies, builds,
-and opens the game. To update an existing install later, run the matching
-newest installer from the downloads page and run it over the top - your saves
-while preserving your saves, scenarios, and map data.
-
-> [!TIP]
-> Run the launcher **normally** — it does not need (and works better without)
-> administrator rights: an elevated window gets the admin account's environment,
-> which can hide a Node.js that was installed for your own account.
-
-
-#### Android app (thin APK)
-
-Easiest: download **`open-historia.apk`** from the
-[**Android release**](https://github.com/Open-Historia/open-historia/releases/tag/android)
-and open it to install (allow installs from your browser when Android asks).
-It's a thin client: the game itself runs on whatever server it connects to, so you need
-one of the two:
-
-- **A desktop on the same network** running the launcher — type its address
-  (e.g. `http://192.168.1.20:3000`) into the app once; it's remembered.
-- **[Termux](https://termux.dev/) on the phone itself** running the server — the app
-  finds it on first launch by itself, no address needed.
-
-<details>
-<summary>Build the APK yourself (needs the Android SDK)</summary>
-
-```bash
-cd mobile
-npm install
-npx cap sync android
-cd android && ./gradlew assembleDebug   # gradlew.bat on Windows
-```
-
-The APK lands in `mobile/android/app/build/outputs/apk/debug/`. (Or open
-`mobile/android` in Android Studio and press Run.) Maintainers: the
-**Build Android APK** action in the Actions tab builds and republishes the
-release APK — run it after changing `mobile/`.
-
-</details>
-
-### Manual
-
-Prerequisites: [Git](https://git-scm.com/) and [Node.js](https://nodejs.org/en) 22 LTS or newer (minimum 20.19 / 22.12 — the client build runs on Vite 7, which requires it).
+Prerequisites: [Git](https://git-scm.com/) and [Node.js](https://nodejs.org/) 22 LTS or newer (minimum 20.19 / 22.12 — the build runs on Vite 7, which requires it), and [bun](https://bun.sh) (the repo uses `bun install`; the lockfile `bun.lock` is gitignored).
 
 ```bash
 git clone https://github.com/Open-Historia/open-historia.git
 cd open-historia
-node scripts/fetch-map-assets.mjs  # Download the world map data (see note below)
-npm install                        # Install dependencies (includes OpenLayers etc. for the editor)
-npm run build                      # Build the client
-node server/server.js              # Start the server
+bun scripts/fetch-map-assets.mjs   # Download the world map data (see note below)
+bun install                        # Install dependencies (includes OpenLayers etc. for the editor)
+bun run dev:web                     # Local dev server (Vite, web mode)
 ```
 
-Then open **http://localhost:3000** in your browser.
+Then open the URL Vite prints (default **http://localhost:5173**) in your browser. To
+produce the deployable site bundle instead:
 
-> [!TIP]
-> **Running the server only — Termux/Android, a headless box, a NAS?** Skip the
-> desktop-app tooling:
->
-> ```bash
-> npm install --omit=dev --omit=optional
-> ```
->
-> That drops Electron and its build chain (783 packages → 286) while keeping
-> everything the client build and the server actually need. On Android it is the
-> difference between working and not: Electron publishes no Android build, so its
-> install script exits with *"Electron builds are not available on platform:
-> android"*. A plain `npm install` still succeeds there — Electron is an
-> `optionalDependency`, so npm reports the failure and carries on — but there is no
-> reason to download it in the first place.
+```bash
+bun run build:site                  # → dist-site/  (the full openhistoria.com bundle)
+```
 
 > **Note:** the large map binaries (`*.pmtiles`, `public/assets/*-seed.*`, and
-> `server/data/scenarios/default/regions.geojson`) are **not** in the repo — they are
+> `data/scenarios/default/regions.geojson`) are **not** in the repo — they are
 > hosted as [GitHub Release assets](https://github.com/Open-Historia/open-historia/releases/tag/map-data)
-> and downloaded by `scripts/fetch-map-assets.mjs`. The launcher script for your platform
-> runs this for you automatically, so a plain ZIP download works too — no Git LFS needed.
+> and downloaded by `scripts/fetch-map-assets.mjs`. No Git LFS is needed.
+
+### Deploy
+
+The site deploys to **Vercel**. `vercel.json` (committed) sets `installCommand: "bun install"`
+and `buildCommand: "bun run build:site"` with `outputDirectory: "dist-site"`; Vercel detects
+bun automatically. A push that runs `build:site` produces `dist-site/`, which is what Vercel
+serves — nothing else is required for the live site.
 
 ---
 
@@ -166,15 +111,15 @@ the in-game **Community** tab. Import any of them with one click, or publish you
 To rebuild an official preset from source (specs live in `scripts/presets/`):
 
 ```bash
-node scripts/presets/build-preset.mjs scripts/presets/wwii-1939.spec.mjs
+bun scripts/presets/build-preset.mjs scripts/presets/wwii-1939.spec.mjs
 ```
 
-To regenerate the built-in Modern Day map: `node scripts/build-default-map.mjs`
+To regenerate the built-in Modern Day map: `bun scripts/build-default-map.mjs`
 
 ## 🗺️ Map editor
 
 Open any scenario's editor and click **🗺️ Open Map Editor** (or visit
-`http://localhost:3000/?editor=1` for the standalone editor). Draw regions, split and
+`http://localhost:5173/?editor=1` for the standalone editor — Vite's default dev port). Draw regions, split and
 merge borders freehand, paint owners, import 70k cities, sign your map, then
 **Apply & Play**.
 

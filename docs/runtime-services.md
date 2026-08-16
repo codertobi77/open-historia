@@ -1,6 +1,6 @@
 # Runtime Services
 
-The `src/runtime/` folder holds the framework-light services that sit between the server API and the React UI: the library/scenario/game catalog stores, the AI-powered UI translator and its language setting, the country-name resolver, and the small tag/label/flag/map-setting helpers. Most of these are plain modules with module-scope state plus a `useSyncExternalStore`/`useState` React hook, deliberately kept free of OpenLayers/heavy deps so the **editor**, the **game**, and the **server** can all import the same rules. This page maps each service, its exported API, and — most importantly — how data flows in from `/api/*` and back out to the components.
+The `src/runtime/` folder holds the framework-light services that sit between the `/api/*` endpoints and the React UI: the library/scenario/game catalog stores, the AI-powered UI translator and its language setting, the country-name resolver, and the small tag/label/flag/map-setting helpers. Most of these are plain modules with module-scope state plus a `useSyncExternalStore`/`useState` React hook, deliberately kept free of OpenLayers/heavy deps so the **editor** and the **game** can both import the same rules. This page maps each service, its exported API, and — most importantly — how data flows in from `/api/*` and back out to the components. On the web build, `/api/*` is answered in-browser by the fetch-interceptor (`src/runtime/web/router.js`), which routes same-origin requests to IndexedDB-backed store handlers — there is no server process.
 
 Related pages: [World state](world-state.md) · [Game state](game-state.md) · [Assets](assets.md) · [AI system](ai-system.md)
 
@@ -15,7 +15,7 @@ Related pages: [World state](world-state.md) · [Game state](game-state.md) · [
 | Country-name resolver | `src/runtime/assets.js` (+ `polityNames.js`) | code→display-name plumbing, runtime asset endpoints/token | every map/name renderer |
 | Language setting | `src/runtime/i18n.js` | UI language choice, `LANGUAGES`, RTL, `languageDirective` | Settings UI, `translator.js`, `callAI` |
 | Translator | `src/runtime/translator.js` | pre-translation pass + live DOM translation cache | `src/main.jsx` (boot), map labels |
-| Country tags | `src/runtime/countryTags.js` | tag normalization + author-vs-live resolution | editor, game, server, `promptContext.js` |
+| Country tags | `src/runtime/countryTags.js` | tag normalization + author-vs-live resolution | editor, game, `promptContext.js` |
 | Country labels | `src/runtime/countryLabels.js` | map country-label GeoJSON (curved + point) | `src/Game/Map/Nations.jsx` |
 | Community flags | `src/runtime/communityFlags.js` | hub-hosted shared flags & flag packs | `src/Editor/FlagPicker.jsx` |
 | Map settings | `src/runtime/mapSettings.js` | localStorage map/AI toggles | map + settings components |
@@ -31,7 +31,7 @@ The single source of truth for the player's **games**, **scenarios**, and which 
 | Field | Type | Meaning |
 |---|---|---|
 | `activeGame` | object \| null | The active game record (resolved from `games` by `activeGameId`) |
-| `activeGameId` | string \| null | Server-chosen active game, falls back to `games[0].id` |
+| `activeGameId` | string \| null | Catalog-chosen active game, falls back to `games[0].id` |
 | `baseSaves` | array | Base-save descriptors returned by the catalog |
 | `countryNames` | object | Catalog-level country-name map (`{}` when absent) |
 | `error` | string \| null | Last catalog error message |
@@ -156,7 +156,7 @@ Where the override resolver renames by scenario, `polityNames.js` resolves a **c
 
 ## Language setting — `src/runtime/i18n.js`
 
-Owns the UI-language *choice* and static catalog. The choice is stored on the **server** (shared by every device — desktop browser and the Android app that play through the same server) and mirrored to `localStorage["ui_language"]` so boot doesn't wait on a fetch. `"en"` (the authored language) means no translation happens at all.
+Owns the UI-language *choice* and static catalog. The choice is stored via the `/api/ui-settings` endpoint (on the web build, answered by the fetch-interceptor and persisted to IndexedDB) and mirrored to `localStorage["ui_language"]` so boot doesn't wait on a fetch. `"en"` (the authored language) means no translation happens at all.
 
 | Export | Purpose |
 |---|---|
@@ -166,7 +166,7 @@ Owns the UI-language *choice* and static catalog. The choice is stored on the **
 | `languageDisplayName(code)` | English display name, falls back to the code |
 | `getStoredLanguage()` | Reads localStorage; returns `DEFAULT_LANGUAGE` on miss/error |
 | `setStoredLanguage(code)` | Writes localStorage **and** PUT `/api/ui-settings` `{ language }` (offline-tolerant) |
-| `syncLanguageFromServer()` | GET `/api/ui-settings`; server wins; returns `true` if the local value changed (caller reloads) |
+| `syncLanguageFromServer()` | GET `/api/ui-settings`; the stored value wins; returns `true` if the local value changed (caller reloads) |
 | `isRtlLanguage(code)` | Membership in `RTL_LANGUAGES` = `{ ar, he, fa, ur }` |
 | `languageDirective()` | System-prompt fragment appended to every AI call so replies arrive natively in-language |
 
@@ -185,10 +185,10 @@ Translates the running UI into the player's language using whichever AI provider
 
 | Export | Purpose |
 |---|---|
-| `startTranslator()` | Called once from `src/main.jsx:24`. Syncs language from server (reload if changed), returns early for English, sets `<html lang>` + RTL `direction`, loads localStorage cache + server pack, waits out the startup screen, then starts the observer and pre-translation pass |
+| `startTranslator()` | Called once from `src/main.jsx:24`. Syncs language from the stored setting (reload if changed), returns early for English, sets `<html lang>` + RTL `direction`, loads localStorage cache + the shared language pack, waits out the startup screen, then starts the observer and pre-translation pass |
 | `stopTranslator()` | Disconnects the observer, clears timers, removes the progress pill |
 
-Boot order inside `startTranslator` (`translator.js:587`): `syncLanguageFromServer()` (reload on change) → bail if `en` → set `lang`/`direction` → `loadCache()` → `loadServerPack()` → `whenStartupScreenGone()` (polls for `[data-startup-screen]`, 180 s cap) → activate observer + `scan()` → `collectCatalogStrings()` → show progress if >10 pending → `processQueue()`.
+Boot order inside `startTranslator` (`translator.js:587`): `syncLanguageFromServer()` (reload on change) → bail if `en` → set `lang`/`direction` → `loadCache()` → `loadServerPack()` → `whenStartupScreenGone()` (polls for `[data-startup-screen]`, 180 s cap) → activate observer + `scan()` → `collectCatalogStrings()` → show progress if >10 pending → `processQueue()`. (`loadServerPack` is a function name kept for compatibility; on the web build its `/api/lang/:language` GET is answered by the fetch-interceptor, not a remote server.)
 
 ### Public lookups (for callers/data outside the DOM)
 
@@ -196,14 +196,16 @@ Boot order inside `startTranslator` (`translator.js:587`): `syncLanguageFromServ
 |---|---|
 | `translateLabel(text)` | **Sync** best-effort translate for text drawn outside the DOM (map country labels). Returns cached translation, or the original while queuing the string + firing `i18n:updated` when it resolves |
 | `enqueueStrings(strings)` | Proactively queue an array of strings (e.g. freshly-fetched hub posts); only uncached ones cost a call |
-| `enqueueContentStrings(payload)` | Deep-walk a saved payload (≤6 deep) pulling human-readable fields (`CONTENT_TEXT_KEYS` + `aliases`), skipping `features`/`geometry`/`coordinates`, and enqueue them. Called by `library.js` on `createScenario/saveScenario/createGame/saveGame` so edited names/descriptions translate **and reach the server pack** the moment they're saved |
+| `enqueueContentStrings(payload)` | Deep-walk a saved payload (≤6 deep) pulling human-readable fields (`CONTENT_TEXT_KEYS` + `aliases`), skipping `features`/`geometry`/`coordinates`, and enqueue them. Called by `library.js` on `createScenario/saveScenario/createGame/saveGame` so edited names/descriptions translate **and reach the shared language pack** the moment they're saved |
 
 `countryLabels.js` calls `translateLabel(...)` so map labels follow the UI language; when new translations land, the `"i18n:updated"` event (debounced in `announceUpdate`) tells label builders to rebuild.
 
-### Server language pack
+### Shared language pack
 
 - `loadServerPack()` — GET `/api/lang/:language`, merges shipped + community-generated translations into the local cache without overwriting.
-- `syncEntriesToServer()` — debounced (2 s) PUT `/api/lang/:language` `{ entries }` pushing newly-generated translations so every device and future session reuses them instead of paying for the same AI call.
+- `syncEntriesToServer()` — debounced (2 s) PUT `/api/lang/:language` `{ entries }` pushing newly-generated translations so future sessions reuse them instead of paying for the same AI call.
+
+On the web build, both `/api/lang/:language` endpoints are answered by the fetch-interceptor (`src/runtime/web/router.js`), which persists the pack to IndexedDB; there is no remote server. The function names (`loadServerPack`/`syncEntriesToServer`) predate the refactor and are kept as-is.
 
 ### Translation engine + config
 
@@ -226,7 +228,7 @@ The `nodeSources` WeakMap records the English source last seen at each text node
 
 ## Country tags — `src/runtime/countryTags.js`
 
-Short traits describing what a country *is* (`"socialist"`, `"authoritarian"`, `"anti-nato"`). The map-maker sets starting tags in the editor (`tags.json` on the scenario); the AI reads them as context and rewrites them into `world.countryTags`. This module owns the two rules both halves must agree on — normalization and which source wins — and **imports nothing** so editor, game, and server share it.
+Short traits describing what a country *is* (`"socialist"`, `"authoritarian"`, `"anti-nato"`). The map-maker sets starting tags in the editor (`tags.json` on the scenario); the AI reads them as context and rewrites them into `world.countryTags`. This module owns the two rules both halves must agree on — normalization and which source wins — and **imports nothing** so the editor and the game share it.
 
 | Export | Purpose |
 |---|---|

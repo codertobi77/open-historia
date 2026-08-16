@@ -86,7 +86,7 @@ TypeManager / Features … ──┼──► MapEditor ──► OlMap  ──�
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string \| null | Server document id; null until first save. |
+| `id` | string \| null | Document id (assigned by the catalog store on first save); null until first save. |
 | `version` | number | Document schema version (1). |
 | `metadata.name` | string | Map name. |
 | `metadata.kind` | `"import-world"` \| `"blank"` | Drives seeding + tier detection. |
@@ -272,7 +272,7 @@ Where names come from and stay clean:
 **Export polity logic** (`exportPreset.js:184`): `STOCK_COUNTRY_NAMES = new Set(Object.values(COUNTRY_NAMES))`. For each owner:
 - If the stock world already knows the name (`STOCK_COUNTRY_NAMES.has(owner)`) → no polity entry needed; the game names/colours/flags it itself.
 - Otherwise → emit a `polityOverrides[owner]` entry so the game and the model learn the country exists at all.
-- **Verbatim flag**: if the invented name *collides with a real GADM code* (`COUNTRY_NAMES[owner]` truthy — e.g. a map-maker literally names a country `"USA"`), the entry gets `verbatim: true` so the server's `resolveOwnerName` (`server/ownerMigration.js`) keeps it literal instead of canonicalising `"USA" → "United States"`. A plain invented name ("Freedonia") needs no flag — it already resolves to itself.
+- **Verbatim flag**: if the invented name *collides with a real GADM code* (`COUNTRY_NAMES[owner]` truthy — e.g. a map-maker literally names a country `"USA"`), the entry gets `verbatim: true` so `resolveOwnerName` (`src/runtime/shared/ownerMigration.js`) keeps it literal instead of canonicalising `"USA" → "United States"`. A plain invented name ("Freedonia") needs no flag — it already resolves to itself.
 
 Colours priority in the seed (`:181`): `colorOverrides[owner]` (a human's chosen colour, wins) → `palette[owner]` → `codeToColor(owner)` (deterministic hash, mirrors the game's fallback).
 
@@ -347,7 +347,7 @@ Boolean ops run directly on OL geometries in EPSG:3857 via `polygon-clipping` (n
 
 ## 17. Persistence (`documentIO.js`, save flow)
 
-Server REST at `/api/mapeditor/documents` (web build routes through `runtime/web/editorStore.js`): `GET` list, `GET /:id`, `POST` create, `PUT /:id` update, `DELETE /:id`. `downloadJson` writes a local `.json`.
+The `/api/mapeditor/documents` REST endpoints (`GET` list, `GET /:id`, `POST` create, `PUT /:id` update, `DELETE /:id`) are answered on the web build by the fetch-interceptor, which routes them to `src/runtime/web/editorStore.js` persisting to IndexedDB — there is no server process. `downloadJson` writes a local `.json`.
 
 `buildPayload()` (`MapEditor.jsx:180`) is a **strict whitelist** — `name, metadata, types, features, colorOverrides, flags, tags, ownerSchema, regions`. **Anything not named here is silently dropped on save**; a new document field appears to work until the first reload. `regions` = `api.serializeRegions()`.
 
