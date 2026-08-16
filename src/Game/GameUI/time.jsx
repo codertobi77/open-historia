@@ -1756,6 +1756,12 @@ const DateWidget = ({
         focusMapOnBounds(mapRef, bounds);
     }, [activeVisibleEvent, countryBounds, disableEventCamera, mapRef, polityLookup, regionBounds]);
 
+    // The pre-jump world the staged reveal (#368) replays from. Declared ahead
+    // of the move-trail effect below because that effect lists stagedBase in
+    // its deps array — evaluated during render, so a later declaration is a
+    // temporal-dead-zone ReferenceError that crashes the whole widget.
+    const [stagedBase, setStagedBase] = useState({ recordId: null, world: null });
+
     // ---- Move trail (Chantier 2) -------------------------------------------
     // When the active event moves a unit, draw a short GeoJSON line from its
     // pre-move position (in the staged base world) to the new destination and
@@ -1903,7 +1909,7 @@ const DateWidget = ({
     // recolors, units, markers). Finishing or skipping the reveal, closing the
     // panel, a new record, or a missing snapshot all clear the override — the
     // worst case is the old behavior: the final state all at once.
-    const [stagedBase, setStagedBase] = useState({ recordId: null, world: null });
+    // (stagedBase itself is declared above the move-trail effect — see note there.)
 
     // A new turn invalidates any staged base from the previous one.
     useEffect(() => {
