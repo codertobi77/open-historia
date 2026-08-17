@@ -37,10 +37,11 @@ const fieldGroupStyle = {
     marginBottom: "0.85rem",
 };
 
-// OpenAI and native NVIDIA use well-known fixed hosts; the compatible / NIM
-// variants take their endpoint from props. Keeping the map in one place lets the
-// caller stay dumb — it only knows the provider id and (optionally) its endpoint.
+// OpenAI, native NVIDIA, and Gemini use well-known fixed hosts; the compatible /
+// NIM variants take their endpoint from props. Keeping the map in one place lets
+// the caller stay dumb — it only knows the provider id and (optionally) its endpoint.
 const FIXED_ENDPOINTS = {
+    gemini: "https://generativelanguage.googleapis.com/v1beta",
     openai: "https://api.openai.com/v1",
     nvidia: "https://integrate.api.nvidia.com/v1",
 };
@@ -51,11 +52,17 @@ function resolveDiscoveryEndpoint(provider, endpointProp) {
     return endpointProp ?? "";
 }
 
-function buildDiscoveryHeaders(apiKey, headersProp) {
+function buildDiscoveryHeaders(provider, apiKey, headersProp) {
     // The caller may pass a ready-made headers object (e.g. an OpenAI-compatible
     // gateway that needs a non-bearer scheme). If it does, use it verbatim.
     if (headersProp && typeof headersProp === "object") {
         return headersProp;
+    }
+
+    // Gemini authenticates with a `key=` query parameter (handled inside
+    // discoverModels), never a header — sending a Bearer key would be wrong.
+    if (provider === "gemini") {
+        return {};
     }
 
     const trimmedKey = (apiKey ?? "").trim();
@@ -121,8 +128,10 @@ const ModelPicker = ({
 
         try {
             const discovered = await discoverModels({
+                provider,
                 endpoint: discoveryEndpoint,
-                headers: buildDiscoveryHeaders(apiKey, headers),
+                headers: buildDiscoveryHeaders(provider, apiKey, headers),
+                apiKey,
                 signal: controller.signal,
             });
             if (controller.signal.aborted) return;
@@ -159,7 +168,7 @@ const ModelPicker = ({
         // react to; listing it would refire every time those change AND again on
         // the lint-driven identity change. Keep inputs explicit here instead.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [canDiscover, discoveryEndpoint, apiKey]);
+    }, [canDiscover, provider, discoveryEndpoint, apiKey]);
 
     // Cancel any pending discovery on unmount.
     useEffect(() => () => {
@@ -181,9 +190,20 @@ const ModelPicker = ({
     const modelIds = models
         .map((entry) => entry?.id)
         .filter((id) => typeof id === "string" && id.trim());
+    // Gemini discovery also returns a human displayName; show it beside the id
+    // so the list reads like AI Studio instead of raw slugs. Providers without
+    // one (OpenAI-style) fall back to the bare id.
+    const displayNames = new Map(
+        models
+            .filter((entry) => typeof entry?.id === "string" && typeof entry?.displayName === "string" && entry.displayName.trim())
+            .map((entry) => [entry.id, entry.displayName.trim()]),
+    );
     const normalizedQuery = query.trim().toLowerCase();
     const filteredIds = normalizedQuery
-        ? modelIds.filter((id) => id.toLowerCase().includes(normalizedQuery))
+        ? modelIds.filter((id) => (
+            id.toLowerCase().includes(normalizedQuery)
+            || (displayNames.get(id) ?? "").toLowerCase().includes(normalizedQuery)
+        ))
         : modelIds;
 
     const currentValue = (value ?? "").trim();
@@ -245,7 +265,7 @@ const ModelPicker = ({
                 )}
                 {filteredIds.map((id) => (
                     <option key={id} value={id} style={{ color: "black" }}>
-                        {id}
+                        {displayNames.has(id) ? `${displayNames.get(id)} (${id})` : id}
                     </option>
                 ))}
             </select>

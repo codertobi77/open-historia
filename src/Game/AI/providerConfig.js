@@ -179,7 +179,8 @@ export function getProviderMeta(provider) {
 
 export function providerSupportsModelDiscovery(provider) {
     const normalized = normalizeProvider(provider);
-    return normalized === "openai"
+    return normalized === "gemini"
+        || normalized === "openai"
         || normalized === "openai-compatible"
         || normalized === "nvidia"
         || normalized === "nvidia-nim-compatible";

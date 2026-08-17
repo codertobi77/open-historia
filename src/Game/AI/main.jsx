@@ -479,13 +479,55 @@ function toAnthropicMessages(history) {
     }));
 }
 
-// Fetches the raw model list from an OpenAI-style /v1/models endpoint. Returns
-// the parsed `data.data` array (each entry like {id}) — possibly empty — so the
-// caller (resolveModel, or a UI picker like ModelPicker) can pick, filter, and
-// surface errors. Throws on any non-abort failure: network/CORS (providerFetch),
-// non-2xx (with the provider's error message extracted), or bad JSON. `endpoint`
-// is normalized and appended "/models". `headers` is passed through verbatim.
-export async function discoverModels({ endpoint, headers, signal } = {}) {
+// Gemini's model list lives at a fixed host and authenticates with a `key=`
+// query parameter (NOT a Bearer header), so it can't share the OpenAI-style
+// path below. Returns entries shaped like {id, displayName} — the `models/`
+// prefix stripped so the value is directly usable in generateContent URLs —
+// and filtered to models that support generateContent (the list also contains
+// embedding/image/tts models the game can't use).
+async function discoverGeminiModels({ apiKey, signal } = {}) {
+    const trimmedKey = (apiKey ?? "").trim();
+
+    if (!trimmedKey) {
+        throw new Error("A Gemini API key is required to list models.");
+    }
+
+    // Plain fetch: Gemini explicitly allows browser calls (CORS enabled), and
+    // the key must never touch the local relay.
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(trimmedKey)}`,
+        { method: "GET", signal },
+    );
+
+    if (!response.ok) {
+        const payload = await readErrorPayload(response);
+        throw new Error(extractErrorMessage(payload, "Could not load models from Gemini."));
+    }
+
+    const data = await response.json();
+    return (data?.models ?? [])
+        .filter((entry) => (entry?.supportedGenerationMethods ?? []).includes("generateContent"))
+        .map((entry) => ({
+            id: normalizeGeminiModel(entry?.name ?? ""),
+            displayName: typeof entry?.displayName === "string" ? entry.displayName : "",
+        }))
+        .filter((entry) => entry.id);
+}
+
+// Fetches the raw model list for a provider. OpenAI-style providers hit their
+// /v1/models endpoint and return the parsed `data.data` array (each entry like
+// {id}); Gemini hits its fixed models endpoint and returns {id, displayName}
+// entries (see discoverGeminiModels). Either way the list — possibly empty —
+// is returned so the caller (resolveModel, or a UI picker like ModelPicker)
+// can pick, filter, and surface errors. Throws on any non-abort failure:
+// network/CORS, non-2xx (with the provider's error message extracted), or bad
+// JSON. `endpoint` is normalized and appended "/models". `headers` is passed
+// through verbatim.
+export async function discoverModels({ provider, endpoint, headers, apiKey, signal } = {}) {
+    if (normalizeProvider(provider) === "gemini") {
+        return discoverGeminiModels({ apiKey, signal });
+    }
+
     const normalizedEndpoint = normalizeEndpoint(endpoint);
 
     if (!normalizedEndpoint) {

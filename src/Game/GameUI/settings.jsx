@@ -447,12 +447,14 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
             placeholder="Paste Gemini API key"
             helperText="Stored only in this browser."
             />
-            <SettingsInput
-            label="Model"
+            <ModelPicker
+            provider="gemini"
+            apiKey={settings.geminiApiKey ?? ""}
             value={settings.geminiModel ?? ""}
             onChange={(value) => onSettingChange("geminiModel", value)}
             placeholder="gemini-3.5-flash-lite"
             helperText="Leave blank to use the built-in Gemini default."
+            supportsDiscovery={true}
             />
             <SettingsInput
             label="Custom parameters (JSON)"
