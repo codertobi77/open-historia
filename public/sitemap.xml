@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://openhistoria.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/play/</loc>
@@ -14,35 +26,112 @@
     <loc>https://openhistoria.com/get-started/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/get-started/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/get-started/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/get-started/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/get-started/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/get-started/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/get-started/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/get-started/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/self-hosting/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/self-hosting/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/self-hosting/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/self-hosting/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/self-hosting/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/self-hosting/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/self-hosting/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/self-hosting/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/ai-setup/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/ai-setup/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/ai-setup/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/ai-setup/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/ai-setup/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/ai-setup/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/ai-setup/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/ai-setup/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/how-to-play/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/how-to-play/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/how-to-play/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/how-to-play/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/how-to-play/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/how-to-play/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/how-to-play/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/how-to-play/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/pax-historia-alternative/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/pax-historia-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/pax-historia-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/pax-historia-alternative/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/pax-historia-alternative/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/pax-historia-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/pax-historia-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/pax-historia-alternative/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/guides/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/guides/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/guides/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/guides/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/guides/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/guides/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/guides/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/guides/"/>
   </url>
   <url>
     <loc>https://openhistoria.com/sitemap/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/sitemap/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/sitemap/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/sitemap/"/>
+  </url>
+  <url>
+    <loc>https://openhistoria.com/fr/sitemap/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openhistoria.com/sitemap/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/sitemap/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openhistoria.com/sitemap/"/>
   </url>
 </urlset>

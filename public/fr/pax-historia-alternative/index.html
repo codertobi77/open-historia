@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9EQ4JFZXZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-H9EQ4JFZXZ');
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="icon" type="image/jpeg" href="/logo.png" />
+  <title>Open Historia — La meilleure alternative gratuite à Pax Historia | Jeu de grande stratégie open source</title>
+  <link rel="canonical" href="https://openhistoria.com/fr/pax-historia-alternative/" />
+  <link rel="alternate" hreflang="en" href="https://openhistoria.com/pax-historia-alternative/" />
+  <link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/pax-historia-alternative/" />
+  <link rel="alternate" hreflang="x-default" href="https://openhistoria.com/pax-historia-alternative/" />
+  <meta name="description" content="Open Historia est la meilleure alternative gratuite et open source à Pax Historia. Comparatif : diplomatie IA, éditeur de carte, scénarios personnalisés, combats de troupes, auto-hébergement et jeu multiplateforme — le tout gratuit sous licence MIT." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Open Historia" />
+  <meta property="og:url" content="https://openhistoria.com/fr/pax-historia-alternative/" />
+  <meta property="og:title" content="Open Historia — La meilleure alternative gratuite à Pax Historia | Jeu de grande stratégie open source" />
+  <meta property="og:description" content="La meilleure alternative gratuite et open source à Pax Historia. Diplomatie IA, éditeur de carte, scénarios personnalisés, combats de troupes, auto-hébergement, multiplateforme — le tout gratuit sous licence MIT." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/Open-Historia/open-historia/main/public/loading_screen.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="720" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Open Historia — La meilleure alternative gratuite à Pax Historia" />
+  <meta name="twitter:description" content="La meilleure alternative gratuite et open source à Pax Historia. Diplomatie IA, éditeur de carte, scénarios personnalisés, combats de troupes — le tout gratuit sous licence MIT." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/Open-Historia/open-historia/main/public/loading_screen.jpg" />
+
+  <link rel="stylesheet" href="/guides.css" />
+  <link rel="stylesheet" href="/lang-switcher.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Open Historia",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any (runs in a web browser)",
+    "description": "Open Historia est un jeu de grande stratégie gratuit et open source, alternative communautaire à Pax Historia. Diplomatie par IA, éditeur de carte vectorielle complet, scénarios personnalisés, combats de troupes et jeu multiplateforme dans le navigateur. Auto-hébergeable sous licence MIT.",
+    "url": "https://openhistoria.com/fr/pax-historia-alternative/",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Open Historia",
+      "url": "https://github.com/Open-Historia"
+    },
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Open Historia",
+        "item": "https://openhistoria.com/fr/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Alternative à Pax Historia",
+        "item": "https://openhistoria.com/fr/pax-historia-alternative/"
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Open Historia est-il vraiment gratuit ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui. Open Historia est entièrement gratuit sous licence MIT. Aucun achat, aucune microtransaction, aucun abonnement, aucune publicité. Le code source est totalement ouvert sur GitHub."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Open Historia est-il identique à Pax Historia ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Non. Open Historia est un projet indépendant inspiré du genre grande stratégie. Il n'est pas affilié à Pax Historia Games. Il est construit de zéro comme une alternative communautaire et open source."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Puis-je jouer à Open Historia hors ligne ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui. Auto-hébergez le build web d'Open Historia sur votre propre machine et il fonctionne entièrement hors ligne. Si vous connectez un LLM local comme Ollama ou LM Studio, même les fonctionnalités IA marchent sans connexion internet."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Est-ce que ça marche sur mobile ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui. Open Historia fonctionne dans n'importe quel navigateur mobile moderne — ouvrez la même URL et la mise en page ainsi que les contrôles tactiles s'adaptent à l'écran."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Puis-je créer et partager mes propres scénarios ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Oui. Utilisez l'éditeur de carte vectorielle complet pour dessiner des régions, placer des villes, définir les propriétaires et les conditions de départ. Publiez votre scénario sur le Hub de scénarios depuis l'onglet Communauté du jeu et partagez-le avec les joueurs du monde entier."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav class="lang-switcher" aria-label="Langue">
+    <a href="/pax-historia-alternative/">EN</a>
+    <a href="/fr/pax-historia-alternative/" class="active" aria-current="page">FR</a>
+  </nav>
+
+  <div class="page">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+      <a href="/fr/">Open Historia</a> <span aria-hidden="true">/</span> Alternative à Pax Historia
+    </nav>
+
+    <img class="logo" src="/logo.png" alt="Logo d'Open Historia" width="64" height="64" />
+
+    <h1>Open Historia — L'alternative gratuite à Pax Historia</h1>
+    <p class="tagline">Open Historia est un jeu de grande stratégie gratuit et open source — une alternative communautaire à Pax Historia — avec diplomatie par IA, éditeur de carte vectorielle complet, scénarios personnalisés, combats de troupes et jeu multiplateforme directement dans votre navigateur. Aucun achat, aucun abonnement, aucun DRM — ouvrez et jouez.</p>
+
+    <h2>Pourquoi quitter Pax Historia ?</h2>
+    <div class="card">
+      <p><strong>Pax Historia</strong> est un jeu de grande stratégie commercial populaire développé par Pax Historia Games. Il propose une expérience de commandement de nation avec une carte du monde, mais il faut payer pour jouer et la feuille de route du développement est contrôlée par une seule entreprise.</p>
+      <p>Open Historia a été construit par des fans de grande stratégie qui voulaient :</p>
+      <ul>
+        <li>Une alternative <strong>entièrement gratuite</strong> — aucun achat, aucune microtransaction, aucun abonnement</li>
+        <li>Une <strong>transparence open source</strong> — l'intégralité du code est sur GitHub sous licence MIT</li>
+        <li>Un <strong>développement communautaire</strong> — les fonctionnalités sont façonnées par les joueurs, pas par des actionnaires</li>
+        <li>Des <strong>serveurs auto-hébergeables</strong> — faites tourner votre propre instance, jouez hors ligne, contrôlez vos données</li>
+        <li>Une <strong>diplomatie par IA</strong> — négociez avec n'importe quelle nation en langage naturel, pas avec des options de dialogue figées</li>
+        <li>Un <strong>éditeur de carte puissant</strong> — créez et partagez des scénarios personnalisés avec des outils d'édition vectorielle complets</li>
+      </ul>
+    </div>
+
+    <h2>Open Historia vs Pax Historia — Comparatif des fonctionnalités</h2>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Fonctionnalité</th>
+          <th>Open Historia</th>
+          <th>Pax Historia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Prix</td>
+          <td><span class="check">Gratuit (open source MIT)</span></td>
+          <td>Payant</td>
+        </tr>
+        <tr>
+          <td>Code source</td>
+          <td><span class="check">Entièrement open source sur GitHub</span></td>
+          <td><span class="cross">Code fermé</span></td>
+        </tr>
+        <tr>
+          <td>Carte du monde interactive</td>
+          <td><span class="check">Territoires, frontières et nations évolutifs</span></td>
+          <td>Carte du monde par nation</td>
+        </tr>
+        <tr>
+          <td>Diplomatie IA</td>
+          <td><span class="check">Chat en langage naturel avec n'importe quelle nation</span></td>
+          <td>Mécaniques figées</td>
+        </tr>
+        <tr>
+          <td>Briefings de renseignement IA</td>
+          <td><span class="check">Analyse complète d'une nation à la demande</span></td>
+          <td>Affichage de statistiques basiques</td>
+        </tr>
+        <tr>
+          <td>Événements générés par IA</td>
+          <td><span class="check">Événements dynamiques basés sur l'état du monde</span></td>
+          <td>Événements prédéfinis</td>
+        </tr>
+        <tr>
+          <td>Conseiller stratégique IA</td>
+          <td><span class="check">Analyse et recommandations en temps réel</span></td>
+          <td><span class="cross">Non disponible</span></td>
+        </tr>
+        <tr>
+          <td>Éditeur de carte vectorielle</td>
+          <td><span class="check">Éditeur complet : dessiner, diviser, fusionner, peindre</span></td>
+          <td>Limité ou outil séparé</td>
+        </tr>
+        <tr>
+          <td>Hub de scénarios</td>
+          <td><span class="check">Parcourir, voter, importer, publier des scénarios</span></td>
+          <td><span class="cross">Non disponible</span></td>
+        </tr>
+        <tr>
+          <td>Création de scénarios personnalisés</td>
+          <td><span class="check">Partage communautaire complet de scénarios</span></td>
+          <td>Limité</td>
+        </tr>
+        <tr>
+          <td>Auto-hébergement</td>
+          <td><span class="check">Faites tourner votre propre serveur, entièrement hors ligne</span></td>
+          <td><span class="cross">Modèle client-serveur</span></td>
+        </tr>
+        <tr>
+          <td>Prise en charge des plateformes</td>
+          <td><span class="check">Tout navigateur web moderne (ordinateur &amp; mobile)</span></td>
+          <td>Windows, macOS</td>
+        </tr>
+        <tr>
+          <td>Modding</td>
+          <td><span class="check">Accès complet au code, éditeur de carte, système de scénarios</span></td>
+          <td>Limité</td>
+        </tr>
+        <tr>
+          <td>Gouvernance communautaire</td>
+          <td><span class="check">Open source, feuille de route communautaire</span></td>
+          <td><span class="cross">Contrôlé par l'entreprise</span></td>
+        </tr>
+        <tr>
+          <td>Jeu sur mobile</td>
+          <td><span class="check">Jouable dans n'importe quel navigateur mobile</span></td>
+          <td><span class="cross">Non disponible</span></td>
+        </tr>
+        <tr>
+          <td>Jeu hors ligne</td>
+          <td><span class="check">Entièrement hors ligne en auto-hébergement</span></td>
+          <td>Connexion requise</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Aussi une alternative gratuite à Age of History 3</h2>
+    <div class="card">
+      <p>Open Historia est aussi une excellente <span class="highlight">alternative gratuite à Age of History 3</span> — un autre titre de grande stratégie populaire. Comme Age of History, Open Historia propose la gestion de nations par territoire, le déploiement de troupes et des scénarios historiques. Mais il y ajoute :</p>
+      <ul>
+        <li>Une diplomatie par IA et une négociation en langage naturel</li>
+        <li>Un conseiller IA qui fournit des recommandations stratégiques en temps réel</li>
+        <li>Un hub communautaire de scénarios pour partager et découvrir des mondes créés par les joueurs</li>
+        <li>Une édition vectorielle complète de la carte intégrée directement au jeu</li>
+        <li>L'auto-hébergement — faites tourner votre propre serveur pour des sessions multijoueur</li>
+      </ul>
+      <p>Si vous cherchez des <strong>jeux comme Age of History 3 mais gratuits</strong> ou des <strong>jeux gratuits comme Age of History</strong>, Open Historia est la meilleure option open source disponible.</p>
+    </div>
+
+    <h2>Open Historia vs les autres jeux de grande stratégie</h2>
+    <div class="card">
+      <p>Bien qu'Open Historia soit l'alternative directe la plus proche de Pax Historia, il partage aussi des éléments avec d'autres jeux de grande stratégie et 4X :</p>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Jeu</th>
+            <th>Similarité</th>
+            <th>Différence clé</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Crusader Kings 3</td>
+            <td>Diplomatie, conseiller stratégique</td>
+            <td>CK3 est centré sur les personnages ; Open Historia est centré sur les nations</td>
+          </tr>
+          <tr>
+            <td>Europa Universalis 4</td>
+            <td>Grande stratégie, ampleur historique</td>
+            <td>Open Historia est gratuit et open source ; EU4 nécessite un achat + DLC</td>
+          </tr>
+          <tr>
+            <td>FreeCiv</td>
+            <td>Jeu de stratégie open source</td>
+            <td>FreeCiv est un 4X de construction de civilisation ; Open Historia est une grande stratégie avec diplomatie IA</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>À qui s'adresse Open Historia ?</h2>
+    <div class="feature-grid">
+      <div class="feature-tag">Passionnés de grande stratégie cherchant une option gratuite</div>
+      <div class="feature-tag">Joueurs de Pax Historia voulant plus de fonctionnalités sans le prix</div>
+      <div class="feature-tag">Moddeurs et créateurs de cartes voulant un contrôle créatif total</div>
+      <div class="feature-tag">Auto-hébergeurs voulant faire tourner leur propre serveur de jeu</div>
+      <div class="feature-tag">Créateurs de scénarios et bâtisseurs de mondes</div>
+      <div class="feature-tag">Joueurs attachés aux logiciels open source et à la propriété communautaire</div>
+      <div class="feature-tag">Joueurs mobiles voulant un jeu de grande stratégie dans leur navigateur</div>
+      <div class="feature-tag">Passionnés d'IA intéressés par les mécaniques de jeu pilotées par LLM</div>
+    </div>
+
+    <h2>Comment passer de Pax Historia à Open Historia</h2>
+    <div class="step">
+      <strong>1. Ouvrez Open Historia gratuitement</strong>
+      <p>Pas de compte, pas de paiement, pas d'inscription. <a href="/fr/get-started/">Ouvrez-le dans votre navigateur</a> et commencez à jouer.</p>
+    </div>
+    <div class="step">
+      <strong>2. Connectez un backend IA (optionnel mais recommandé)</strong>
+      <p>Suivez le <a href="/fr/ai-setup/">guide de configuration IA</a> pour activer la diplomatie IA, les événements et le conseiller stratégique. Le jeu est jouable sans IA, mais l'IA débloque l'expérience complète.</p>
+    </div>
+    <div class="step">
+      <strong>3. Apprenez les mécaniques</strong>
+      <p>Lisez le <a href="/fr/how-to-play/">guide Comment jouer</a> pour vous familiariser avec la gestion de nation, le déploiement de troupes, la diplomatie et l'éditeur de carte.</p>
+    </div>
+    <div class="step">
+      <strong>4. Rejoignez la communauté</strong>
+      <p>Rejoignez le <a href="https://discord.gg/C3AVwHacZ4" target="_blank" rel="noopener">serveur Discord</a> pour échanger avec d'autres joueurs, partager des scénarios, obtenir de l'aide et influencer la feuille de route du développement.</p>
+    </div>
+
+    <h2>Questions fréquentes</h2>
+
+    <div class="card">
+      <h3>Open Historia est-il vraiment gratuit ?</h3>
+      <p>Oui. Open Historia est <strong>entièrement gratuit</strong> sous licence MIT. Aucun achat, aucune microtransaction, aucun abonnement, aucune publicité. Le code source est totalement ouvert sur GitHub et le restera toujours.</p>
+    </div>
+
+    <div class="card">
+      <h3>Open Historia est-il identique à Pax Historia ?</h3>
+      <p>Non. Open Historia est un <strong>projet indépendant</strong> inspiré du genre grande stratégie. Il n'est pas affilié à Pax Historia Games. Il est construit de zéro comme une alternative communautaire et open source pour les joueurs qui veulent une expérience de grande stratégie gratuite avec diplomatie par IA et éditeur de carte complet.</p>
+    </div>
+
+    <div class="card">
+      <h3>Puis-je jouer à Open Historia hors ligne ?</h3>
+      <p>Oui. Si vous <a href="/fr/self-hosting/">auto-hébergez le build web</a> sur votre propre machine, Open Historia fonctionne <strong>entièrement hors ligne</strong>. Si vous connectez un LLM local (comme Ollama ou LM Studio), même les fonctionnalités IA marchent sans connexion internet.</p>
+    </div>
+
+    <div class="card">
+      <h3>Est-ce que ça marche sur mobile ?</h3>
+      <p>Oui. Open Historia fonctionne dans n'importe quel navigateur mobile moderne — ouvrez la même URL et la mise en page ainsi que les contrôles tactiles s'adaptent à l'écran. Aucune application à installer.</p>
+    </div>
+
+    <div class="card">
+      <h3>Puis-je créer et partager mes propres scénarios ?</h3>
+      <p>Oui. Utilisez l'<strong>éditeur de carte vectorielle complet</strong> pour dessiner des régions, placer des villes, définir les propriétaires et les conditions de départ. Publiez votre scénario sur le Hub de scénarios depuis l'onglet Communauté du jeu et partagez-le avec les joueurs du monde entier.</p>
+    </div>
+
+    <h2>Prêt à jouer ?</h2>
+    <p>Open Historia est la meilleure alternative gratuite à Pax Historia — avec diplomatie par IA, éditeur de carte complet, scénarios communautaires et jeu multiplateforme. Le tout gratuit, le tout open source, le tout piloté par la communauté.</p>
+
+    <a href="/fr/" class="cta">Jouer à Open Historia dans votre navigateur</a>
+    <a href="/fr/get-started/" class="cta cta-secondary" style="margin-left: 0.75rem;">Commencer</a>
+
+    <footer>
+      <p>Open Historia — jeu de grande stratégie gratuit et open source. <a href="https://github.com/Open-Historia/open-historia" target="_blank" rel="noopener">GitHub</a> · <a href="https://discord.gg/C3AVwHacZ4" target="_blank" rel="noopener">Discord</a> · <a href="/sitemap.xml">Sitemap</a></p>
+    </footer>
+  </div>
+</body>
+</html>

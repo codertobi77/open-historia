@@ -1,7 +1,7 @@
 /*! Open Historia — combined site assembler © 2026 Nicholas Krol, MIT. */
 // Builds dist-site/: the marketing landing page (site/) at the root, and the web
 // game (dist-web/, built with `--base /play/`) under /play/. Deploy dist-site to
-// Cloudflare Pages so openhistoria.com serves the landing page and its "Play"
+// Vercel so openhistoria.com serves the landing page and its "Play"
 // button opens the game (connect + sign-in screen) at /play/.
 import { rmSync, mkdirSync, cpSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -22,7 +22,13 @@ const outDir = path.join(root, "dist-site");
 const ROOT_PAGES = [
   "guides", "get-started", "how-to-play", "ai-setup", "self-hosting",
   "pax-historia-alternative", "sitemap",
-  "guides.css", "robots.txt", "sitemap.xml",
+  // French versions of every static page live under public/fr/ and must answer at
+  // /fr/… for the same reason the EN pages are lifted: hreflang + switcher links
+  // point there, and a missing /fr/ page would 404 for French visitors and crawlers.
+  "fr",
+  // Shared stylesheet for the EN/FR language switcher on the guide pages (they
+  // reference it with an absolute "/lang-switcher.css" path).
+  "guides.css", "lang-switcher.css", "robots.txt", "sitemap.xml",
 ];
 
 // Image assets referenced with absolute "/…" paths by BOTH the root guide pages and

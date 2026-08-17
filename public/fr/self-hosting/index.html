@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9EQ4JFZXZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-H9EQ4JFZXZ');
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="icon" type="image/jpeg" href="/logo.png" />
+  <title>Auto-héberger Open Historia — Guide de déploiement pour Vercel, Netlify, GitHub Pages &amp; Docker</title>
+  <link rel="canonical" href="https://openhistoria.com/fr/self-hosting/" />
+  <link rel="alternate" hreflang="en" href="https://openhistoria.com/self-hosting/" />
+  <link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/self-hosting/" />
+  <link rel="alternate" hreflang="x-default" href="https://openhistoria.com/self-hosting/" />
+  <meta name="description" content="Hébergez votre propre instance d'Open Historia. Guide de déploiement couvrant Vercel, Netlify, GitHub Pages, Docker et tout serveur web statique." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Open Historia" />
+  <meta property="og:url" content="https://openhistoria.com/fr/self-hosting/" />
+  <meta property="og:title" content="Auto-héberger Open Historia — Guide de déploiement pour Vercel, Netlify, GitHub Pages &amp; Docker" />
+  <meta property="og:description" content="Hébergez votre propre instance d'Open Historia. Déployez sur Vercel, Netlify, GitHub Pages, Docker ou tout serveur web statique." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/Open-Historia/open-historia/main/public/loading_screen.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="720" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Auto-héberger Open Historia — Guide de déploiement" />
+  <meta name="twitter:description" content="Hébergez votre propre instance d'Open Historia. Déployez sur Vercel, Netlify, GitHub Pages, Docker ou tout serveur web statique." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/Open-Historia/open-historia/main/public/loading_screen.jpg" />
+
+  <link rel="stylesheet" href="/guides.css" />
+  <link rel="stylesheet" href="/lang-switcher.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "Comment auto-héberger Open Historia",
+    "description": "Guide étape par étape pour déployer votre propre instance d'Open Historia sur Vercel, Netlify, GitHub Pages, Docker ou tout serveur web statique.",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "position": "1",
+        "name": "Clonez le dépôt",
+        "text": "Clonez le dépôt Open Historia depuis GitHub sur votre machine locale."
+      },
+      {
+        "@type": "HowToStep",
+        "position": "2",
+        "name": "Installez les dépendances",
+        "text": "Exécutez bun install pour installer toutes les dépendances du projet."
+      },
+      {
+        "@type": "HowToStep",
+        "position": "3",
+        "name": "Compilez le site",
+        "text": "Exécutez bun run build:site pour produire le site statique complet dans dist-site/."
+      },
+      {
+        "@type": "HowToStep",
+        "position": "4",
+        "name": "Déployez",
+        "text": "Déployez le dossier dist-site/ sur Vercel, Netlify, GitHub Pages, Docker ou tout serveur web statique."
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Open Historia",
+        "item": "https://openhistoria.com/fr/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Guide d'auto-hébergement",
+        "item": "https://openhistoria.com/fr/self-hosting/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav class="lang-switcher" aria-label="Langue">
+    <a href="/self-hosting/">EN</a>
+    <a href="/fr/self-hosting/" class="active" aria-current="page">FR</a>
+  </nav>
+
+  <div class="page">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+      <a href="/fr/">Open Historia</a> <span aria-hidden="true">/</span> Guide d'auto-hébergement
+    </nav>
+
+    <img class="logo" src="/logo.png" alt="Logo d'Open Historia" width="64" height="64" />
+
+    <h1>Auto-hébergez Open Historia</h1>
+    <p class="tagline">Déployez votre propre instance d'Open Historia — le jeu de grande stratégie gratuit et open source. Le site est entièrement statique, il peut donc être hébergé n'importe où.</p>
+
+    <h2>Prérequis</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Node.js 18+</strong> — requis pour compiler le projet</li>
+        <li><strong>bun</strong> — le gestionnaire de paquets utilisé par le projet (<a href="https://bun.sh" target="_blank" rel="noopener">bun.sh</a>)</li>
+        <li><strong>Git</strong> — pour cloner le dépôt</li>
+      </ul>
+    </div>
+
+    <h2>Compiler le site</h2>
+    <div class="card">
+      <div class="step">
+        <strong>Cloner et installer</strong>
+        <p><code>git clone https://github.com/Open-Historia/open-historia.git</code><br /><code>cd open-historia</code><br /><code>bun install</code></p>
+      </div>
+      <div class="step">
+        <strong>Compiler le site statique</strong>
+        <p><code>bun run build:site</code></p>
+        <p>Cela compile l'application web avec Vite, assemble le site statique complet (page d'accueil, guides, sitemap) et produit un dossier <code>dist-site/</code> prêt à être servi par n'importe quel serveur web statique.</p>
+      </div>
+      <div class="step">
+        <strong>Tester localement</strong>
+        <p><code>bun run preview:site</code></p>
+        <p>Sert le site compilé localement pour vérification avant déploiement.</p>
+      </div>
+    </div>
+
+    <h2>Options de déploiement</h2>
+
+    <h3>Vercel (recommandé)</h3>
+    <div class="card">
+      <p>Vercel est la plateforme de déploiement la plus simple pour Open Historia. Le dépôt inclut un fichier <code>vercel.json</code> avec toutes les règles de réécriture nécessaires.</p>
+      <div class="step">
+        <strong>Forker et connecter</strong>
+        <p>Forkez le dépôt sur GitHub, puis importez-le sur <a href="https://vercel.com" target="_blank" rel="noopener">vercel.com</a>. Vercel détecte automatiquement Vite.</p>
+      </div>
+      <div class="step">
+        <strong>Configurer le build</strong>
+        <p>Définissez la commande de build sur <code>bun run build:site</code> et le répertoire de sortie sur <code>dist-site</code>. Installez bun via la variable d'environnement <code>ENABLE_EXPERIMENTAL_COREPACK=1</code> ou utilisez l'image de build de Vercel avec bun préinstallé.</p>
+      </div>
+      <div class="step">
+        <strong>Déployer</strong>
+        <p>Cliquez sur « Deploy ». Vercel gère le SSL, le CDN et les redéploiements automatiques à chaque push.</p>
+      </div>
+    </div>
+
+    <h3>Netlify</h3>
+    <div class="card">
+      <p>Netlify fonctionne également très bien. Le dépôt inclut un fichier <code>netlify.toml</code> avec la configuration de build et les règles de redirection.</p>
+      <div class="step">
+        <strong>Connecter le dépôt</strong>
+        <p>Sur <a href="https://netlify.com" target="_blank" rel="noopener">netlify.com</a>, créez un nouveau site depuis Git et sélectionnez votre fork.</p>
+      </div>
+      <div class="step">
+        <strong>Configurer le build</strong>
+        <p>Commande de build : <code>bun run build:site</code>. Répertoire de publication : <code>dist-site</code>. Ajoutez la variable d'environnement <code>BUN_VERSION</code> ou utilisez le plugin bun de Netlify.</p>
+      </div>
+      <div class="step">
+        <strong>Déployer</strong>
+        <p>Netlify gère le SSL, le CDN et les déploiements continus automatiquement.</p>
+      </div>
+    </div>
+
+    <h3>GitHub Pages</h3>
+    <div class="card">
+      <p>GitHub Pages est gratuit et fonctionne bien pour les sites statiques comme Open Historia.</p>
+      <div class="step">
+        <strong>Compiler le site</strong>
+        <p>Exécutez <code>bun run build:site</code> localement pour générer le dossier <code>dist-site/</code>.</p>
+      </div>
+      <div class="step">
+        <strong>Configurer GitHub Pages</strong>
+        <p>Dans les paramètres de votre fork, activez GitHub Pages et pointez-le vers la branche <code>gh-pages</code> ou utilisez une GitHub Action pour déployer automatiquement le dossier <code>dist-site/</code>.</p>
+      </div>
+      <div class="step">
+        <strong>Gérer le chemin de base</strong>
+        <p>Si vous hébergez sous un sous-chemin (par ex. <code>username.github.io/open-historia</code>), définissez <code>base</code> dans <code>vite.config.js</code> sur le sous-chemin avant de compiler.</p>
+      </div>
+    </div>
+
+    <h3>Docker</h3>
+    <div class="card">
+      <p>Pour les déploiements auto-hébergés, Docker avec nginx est une option solide.</p>
+      <div class="step">
+        <strong>Créer un Dockerfile</strong>
+        <p>Utilisez une image node pour compiler, puis copiez le résultat dans une image nginx :</p>
+        <p><code>FROM node:20 AS build</code><br /><code>WORKDIR /app</code><br /><code>COPY . .</code><br /><code>RUN npm install -g bun &amp;&amp; bun install &amp;&amp; bun run build:site</code><br /><code>FROM nginx:alpine</code><br /><code>COPY --from=build /app/dist-site /usr/share/nginx/html</code></p>
+      </div>
+      <div class="step">
+        <strong>Compiler et exécuter</strong>
+        <p><code>docker build -t open-historia .</code><br /><code>docker run -p 8080:80 open-historia</code></p>
+      </div>
+    </div>
+
+    <h3>Tout serveur web statique</h3>
+    <div class="card">
+      <p>Le dossier <code>dist-site/</code> est un site statique pur — HTML, CSS, JS et assets. Il peut être servi par n'importe quel serveur web : nginx, Apache, Caddy, ou même un simple <code>python -m http.server</code> pour les tests. Aucune configuration serveur spéciale n'est requise au-delà du fait de servir des fichiers statiques.</p>
+    </div>
+
+    <h2>Guides associés</h2>
+    <ul>
+      <li><a href="/fr/get-started/">Démarrage — commencez à jouer dans votre navigateur</a></li>
+      <li><a href="/fr/ai-setup/">Configuration IA — connectez n'importe quel fournisseur d'IA</a></li>
+      <li><a href="/fr/how-to-play/">Comment jouer — mécaniques de jeu et contrôles</a></li>
+    </ul>
+
+    <a href="/play/" class="cta">Jouer à Open Historia</a>
+
+    <footer>
+      <p>Open Historia — jeu de grande stratégie gratuit et open source. <a href="https://github.com/Open-Historia/open-historia" target="_blank" rel="noopener">GitHub</a> · <a href="https://discord.gg/C3AVwHacZ4" target="_blank" rel="noopener">Discord</a> · <a href="/sitemap.xml">Sitemap</a></p>
+    </footer>
+  </div>
+</body>
+</html>

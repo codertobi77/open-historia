@@ -1,6 +1,6 @@
-<!-- Open Historia — 404 page © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). -->
+<!-- Open Historia — 404 page (French) © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). -->
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <!-- Google tag (gtag.js) -->
@@ -13,19 +13,16 @@
       gtag('config', 'G-H9EQ4JFZXZ');
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Page not found — Open Historia</title>
+    <title>Page introuvable — Open Historia</title>
     <!-- Same compass favicon as the landing page (assemble-site copies site/ to the
          root, so /favicon.png resolves here too). -->
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#e9dcc0" />
 
-    <!-- This file is why unknown URLs return a real 404. Cloudflare Pages serves
-         /404.html with a 404 status when a path matches no asset; with no such file
-         it falls back to /index.html with a 200, so every typo, dead link and stale
-         search result answered as the landing page. Search engines read that as a
-         "soft 404" and it made a broken sitemap URL indistinguishable from a working
-         one. Deleting this file silently restores that behaviour. -->
+    <!-- French counterpart of /404.html. The host serves /404.html with a 404
+         status when a path matches no asset; this page keeps the same identity
+         for French-speaking visitors who land on /fr/404.html directly. -->
     <meta name="robots" content="noindex" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -135,24 +132,24 @@
     </style>
   </head>
   <body>
-    <nav class="lang-switcher" aria-label="Language">
-      <a href="/404.html" class="active" aria-current="page">EN</a>
-      <a href="/fr/404.html">FR</a>
+    <nav class="lang-switcher" aria-label="Langue">
+      <a href="/404.html">EN</a>
+      <a href="/fr/404.html" class="active" aria-current="page">FR</a>
     </nav>
 
     <main class="wrap">
       <div class="mark">🏛️</div>
-      <div class="eyebrow">Error 404</div>
-      <h1>Lost to history</h1>
+      <div class="eyebrow">Erreur 404</div>
+      <h1>Perdue dans l'histoire</h1>
       <div class="rule"></div>
       <p>
-        This page doesn't exist — or it did once, and the borders have moved since.
-        Check the address, or start again from somewhere solid.
+        Cette page n'existe pas — ou elle a existé un jour, et les frontières ont bougé depuis.
+        Vérifiez l'adresse, ou repartez d'un endroit sûr.
       </p>
       <div class="btns">
-        <a class="btn btn-primary" href="/">Return home</a>
-        <a class="btn" href="/play/">Play</a>
-        <a class="btn" href="/guides/">Guides</a>
+        <a class="btn btn-primary" href="/fr/">Retour à l'accueil</a>
+        <a class="btn" href="/play/">Jouer</a>
+        <a class="btn" href="/fr/guides/">Guides</a>
       </div>
     </main>
   </body>

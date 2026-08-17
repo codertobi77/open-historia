@@ -16,6 +16,9 @@
   <link rel="icon" type="image/jpeg" href="/logo.png" />
   <title>Self-Hosting Open Historia — Host Your Own Web Build Offline</title>
   <link rel="canonical" href="https://openhistoria.com/self-hosting/" />
+  <link rel="alternate" hreflang="en" href="https://openhistoria.com/self-hosting/" />
+  <link rel="alternate" hreflang="fr" href="https://openhistoria.com/fr/self-hosting/" />
+  <link rel="alternate" hreflang="x-default" href="https://openhistoria.com/self-hosting/" />
   <meta name="description" content="Host your own copy of the Open Historia web build for offline play, your LAN, or friends. Build it with bun and serve the static site — no Node server required." />
 
   <meta property="og:type" content="website" />
@@ -34,6 +37,7 @@
   <meta name="twitter:image" content="https://raw.githubusercontent.com/Open-Historia/open-historia/main/public/loading_screen.jpg" />
 
   <link rel="stylesheet" href="/guides.css" />
+  <link rel="stylesheet" href="/lang-switcher.css" />
 
   <script type="application/ld+json">
   {
@@ -85,6 +89,11 @@
   </script>
 </head>
 <body>
+  <nav class="lang-switcher" aria-label="Language">
+    <a href="/self-hosting/" class="active" aria-current="page">EN</a>
+    <a href="/fr/self-hosting/">FR</a>
+  </nav>
+
   <div class="page">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <a href="/">Open Historia</a> <span aria-hidden="true">/</span> Self-Hosting Guide

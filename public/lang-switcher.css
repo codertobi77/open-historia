@@ -1,0 +1,36 @@
+/* Open Historia — language switcher for the guide pages (dark theme).
+   The landing page and 404 page keep their own parchment-themed switcher
+   inline, because they don't load guides.css. */
+.lang-switcher {
+  position: fixed;
+  top: 1rem;
+  right: 1.25rem;
+  z-index: 100;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: #121a2e;
+  border: 1px solid #1e2a44;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.lang-switcher a {
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  color: #9aa0b8;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.lang-switcher a:hover {
+  color: #e0e0e0;
+  text-decoration: none;
+}
+
+.lang-switcher a.active {
+  background: #2a5cdb;
+  color: #ffffff;
+}
