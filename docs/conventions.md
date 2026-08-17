@@ -249,6 +249,7 @@ Related gitignored-but-not-in-LFS runtime artifacts you also shouldn't commit: `
 | Touch the content-node trust guards / signing | `tools/content-node/` (`trust.js`, `node.js`, `security.test.js`) |
 | Edit the map editor | `src/Editor/` (separately licensed — `src/Editor/LICENSE`) |
 | Edit the game map / UI | `src/Game/` — see [Game map](game-map.md), [Game UI](game-ui.md) |
+| Change UI styling / design tokens | `DESIGN.md` (spec) + `src/design/tokens.js` (code) — see [Design system](design.md) |
 | World-state fields & flow | [World state](world-state.md) |
 | Runtime services (library/scenario stores, i18n, resolver) | [Runtime services](runtime-services.md), `src/runtime/` |
 | AI prompts / schemas | [AI overview](ai-overview.md), [AI schemas](ai-schemas.md), [AI prompts](ai-prompts.md) |

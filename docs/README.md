@@ -13,6 +13,7 @@ New to the codebase? Read **[Architecture Overview](architecture.md)** first —
 ### Getting Started
 - [Architecture Overview](architecture.md) — Tech stack, the web build variant and the `VITE_OH_WEB` flag, boot sequence, directory map, and the frontend↔fetch-interceptor↔IndexedDB data flow.
 - [Contributing & Conventions](conventions.md) — Repo/remote layout, PR-only process, commit/attribution and comment style, local dev, `node --test`, and frozen identifiers.
+- [Design System](design.md) — The `DESIGN.md` design language and its code form `src/design/tokens.js`: read before any UI work; scope, migration policy, and the spec↔tokens sync rule.
 
 ### Game
 - [Game Map & Rendering](game-map.md) — In-game MapLibre rendering: region/country layers, owner colouring, disputed stripes, labels, cities/markers/units, the decorative globe, and `world.json` data flow.
