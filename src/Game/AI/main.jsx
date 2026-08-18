@@ -3,6 +3,7 @@ import {
     getProviderSettings,
     getReasoningEnabled,
     getStoredProvider,
+    normalizeProvider,
     providerSupportsModelDiscovery,
     setProviderField,
 } from "./providerConfig.js";
