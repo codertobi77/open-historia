@@ -135,7 +135,7 @@ const FloatPanel = ({
     const origin = { x: geom.x, y: geom.y };
     const controller = new AbortController();
     const move = (ev) => {
-      persist({ x: origin.x + (Ev.clientX - startX), y: origin.y + (Ev.clientY - startY) });
+      persist({ x: origin.x + (ev.clientX - startX), y: origin.y + (ev.clientY - startY) });
     };
     const up = () => {
       controller.abort();
@@ -153,8 +153,8 @@ const FloatPanel = ({
     const startY = event.clientY;
     const origin = { w: geom.w, h: geom.h };
     const controller = new AbortController();
-    const move = (Ev) => {
-      persist({ w: origin.w + (Ev.clientX - startX), h: origin.h + (Ev.clientY - startY) });
+    const move = (ev) => {
+      persist({ w: origin.w + (ev.clientX - startX), h: origin.h + (ev.clientY - startY) });
     };
     const up = () => { controller.abort(); };
     resizeRef.current = controller;
