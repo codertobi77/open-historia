@@ -6,19 +6,22 @@ import { useIsMobile } from "../../runtime/useIsMobile.js";
 import { useCountryDisplayName } from "../../runtime/polityNames.js";
 import { flagEmojiFromGid, flagImageUrlFromGid } from "../../runtime/countryFlags.js";
 
+import { colors, fonts } from "../../design/tokens.js";
+
+// Design-system chrome (DESIGN.md): canvas-soft disc + hairline ring, no blur
+// or shadow. The badge is a circular flag holder (rounded.full is the
+// icon-container exemption); the flag image inside is clipped round too.
 const baseStyle = {
     position: "fixed",
-    backgroundColor: "rgba(17, 24, 39, 0.9)",
-    backdropFilter: "blur(4px)",
+    backgroundColor: colors.canvasSoft,
     zIndex: 9999,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "white",
-    fontFamily: "sans-serif",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
+    color: colors.primary,
+    fontFamily: fonts.sans,
+    borderRadius: "50%",
+    border: `1px solid ${colors.hairline}`,
 };
 
 // A GID_0 that isn't a real ISO country (custom scenario polities like "HRE",
@@ -30,9 +33,10 @@ const FallbackBadge = ({ label }) => (
     title={label}
     style={{
         alignItems: "center",
-        backgroundColor: "rgba(75, 85, 99, 0.9)",
+        // Darker canvas fill inside the canvas-soft badge = surface contrast.
+        backgroundColor: colors.canvas,
         borderRadius: "50%",
-        color: "white",
+        color: colors.primary,
         display: "flex",
         fontSize: "1.1rem",
         fontWeight: 700,

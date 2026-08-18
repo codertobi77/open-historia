@@ -19,6 +19,7 @@ import COUNTRY_NAMES from "../../runtime/generated/countryNames.js";
 import { DIFFICULTY_LEVELS, normalizeDifficulty } from "../../runtime/difficulty.js";
 import { applyGameMasterCommand } from "../AI/gameplay.js";
 import { setRegionClickInterceptor } from "../Selection/Regions.jsx";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 const PANEL_TOP = "4.75rem";
 const EMPTY_FEATURES = { type: "FeatureCollection", features: [] };
@@ -39,12 +40,15 @@ const TOOLS = [
     { id: "events", title: "Events", subtitle: "Edit historical events and their descriptions" },
 ];
 
+// Design-system form chrome (DESIGN.md / src/design/tokens.js): inputs are
+// darker canvas fills recessed into the canvas-soft panel, hairline borders,
+// 3px radii — no glass, no blur.
 const inputStyle = {
-    background: "rgba(0,0,0,0.28)",
-    border: "1px solid rgba(255,255,255,0.16)",
-    borderRadius: 8,
+    background: colors.canvas,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: rounded.sm,
     boxSizing: "border-box",
-    color: "#fff",
+    color: colors.primary,
     fontSize: "0.83rem",
     outline: "none",
     padding: "0.5rem 0.6rem",
@@ -53,10 +57,10 @@ const inputStyle = {
 
 const buttonStyle = {
     alignItems: "center",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 8,
-    color: "#fff",
+    background: colors.canvas,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: rounded.sm,
+    color: colors.bodyStrong,
     cursor: "pointer",
     display: "flex",
     fontSize: "0.82rem",
@@ -66,14 +70,16 @@ const buttonStyle = {
     padding: "0.5rem 0.7rem",
 };
 
+// Primary action = polarity flip: off-white fill, dark label.
 const primaryButtonStyle = {
     ...buttonStyle,
-    background: "rgba(124,58,237,0.35)",
-    border: "1px solid rgba(139,92,246,0.55)",
+    background: colors.primary,
+    border: `1px solid ${colors.primary}`,
+    color: colors.onPrimary,
 };
 
 const labelStyle = {
-    color: "rgba(255,255,255,0.75)",
+    color: colors.bodyStrong,
     display: "block",
     fontSize: "0.72rem",
     fontWeight: 700,
@@ -253,7 +259,7 @@ const CheatsPanel = ({ open, onClose, onOpenForces }) => {
     return (
         <>
         {clickMode && (
-            <div style={{ alignItems: "center", display: "flex", gap: "0.6rem", background: "rgba(17,24,39,0.97)", border: "1px solid rgba(139,92,246,0.5)", borderRadius: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.5)", color: "#fff", fontFamily: "sans-serif", fontSize: "0.85rem", left: "50%", padding: "0.6rem 0.9rem", position: "fixed", top: PANEL_TOP, transform: "translateX(-50%)", zIndex: 10070 }}>
+            <div style={{ alignItems: "center", display: "flex", gap: "0.6rem", background: colors.canvasSoft, border: `1px solid ${colors.hairline}`, borderRadius: rounded.md, color: colors.primary, fontFamily: fonts.sans, fontSize: "0.85rem", left: "50%", padding: "0.6rem 0.9rem", position: "fixed", top: PANEL_TOP, transform: "translateX(-50%)", zIndex: 10070 }}>
             <span>{clickMode.label}</span>
             <button type="button" onClick={endClickMode} style={{ ...primaryButtonStyle, padding: "0.3rem 0.6rem" }}>Done</button>
             </div>
@@ -261,15 +267,13 @@ const CheatsPanel = ({ open, onClose, onOpenForces }) => {
 
         <div
         style={{
-            background: "rgba(17, 24, 39, 0.96)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 16,
-            boxShadow: "-4px 0 24px rgba(0,0,0,0.4)",
-            color: "white",
+            background: colors.canvasSoft,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.md,
+            color: colors.primary,
             display: clickMode ? "none" : "flex",
             flexDirection: "column",
-            fontFamily: "sans-serif",
+            fontFamily: fonts.sans,
             maxHeight: `calc(100vh - ${PANEL_TOP} - 1rem)`,
             overflow: "hidden",
             padding: "0.9rem",
@@ -325,7 +329,7 @@ const CheatsPanel = ({ open, onClose, onOpenForces }) => {
             />
         )}
         {status && !tool && (
-            <div style={{ color: "rgba(191,219,254,0.9)", fontSize: "0.76rem", marginTop: "0.6rem" }}>{status}</div>
+            <div style={{ color: colors.bodyStrong, fontSize: "0.76rem", marginTop: "0.6rem" }}>{status}</div>
         )}
         </div>
         </>
@@ -363,8 +367,9 @@ const ToolView = ({ tool, header, busy, status, game, polities, refresh, runBusy
         }
     }, [tool]);
 
+    // Failure keeps its red tint (functional color); success is neutral text.
     const statusLine = status && (
-        <div style={{ color: status.startsWith("Failed") ? "#fca5a5" : "rgba(191,219,254,0.9)", fontSize: "0.76rem", marginTop: "0.6rem" }}>
+        <div style={{ color: status.startsWith("Failed") ? "#fca5a5" : colors.bodyStrong, fontSize: "0.76rem", marginTop: "0.6rem" }}>
         {status}
         </div>
     );
@@ -530,8 +535,10 @@ const ToolView = ({ tool, header, busy, status, game, polities, refresh, runBusy
                 })}
                 style={{
                     ...buttonStyle,
-                    background: current === level.id ? "rgba(124,58,237,0.35)" : buttonStyle.background,
-                    border: current === level.id ? "1px solid rgba(139,92,246,0.65)" : buttonStyle.border,
+                    // Selected difficulty = polarity flip (off-white fill).
+                    background: current === level.id ? colors.primary : buttonStyle.background,
+                    border: current === level.id ? `1px solid ${colors.primary}` : buttonStyle.border,
+                    color: current === level.id ? colors.onPrimary : buttonStyle.color,
                     flexDirection: "column",
                     gap: "0.15rem",
                     padding: "0.65rem 0.4rem",

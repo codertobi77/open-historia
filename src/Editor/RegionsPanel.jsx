@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import Panel from "./Panel.jsx";
 import Icon from "./Icon.jsx";
 import { inputStyle } from "./editorStyles.js";
+import { colors, rounded } from "../design/tokens.js";
 
 const RegionsPanel = ({ api, selection, setSelection, onClose }) => {
   const [query, setQuery] = useState("");
@@ -33,7 +34,7 @@ const RegionsPanel = ({ api, selection, setSelection, onClose }) => {
           autoFocus
         />
       </div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
+      <div style={{ fontSize: 11, color: colors.mute }}>
         {results.length}{results.length >= 300 ? "+" : ""} shown
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -52,10 +53,11 @@ const RegionsPanel = ({ api, selection, setSelection, onClose }) => {
                 gap: 8,
                 textAlign: "left",
                 padding: "6px 8px",
-                borderRadius: 8,
-                border: active ? "1px solid rgba(59,130,246,0.8)" : "1px solid transparent",
-                background: active ? "rgba(59,130,246,0.18)" : "rgba(255,255,255,0.03)",
-                color: "white",
+                borderRadius: rounded.md,
+                // Selected row = polarity flip (off-white fill + dark text).
+                border: active ? `1px solid ${colors.primary}` : "1px solid transparent",
+                background: active ? colors.primary : colors.canvas,
+                color: active ? colors.onPrimary : colors.ink,
                 cursor: "pointer",
               }}
             >
@@ -63,7 +65,7 @@ const RegionsPanel = ({ api, selection, setSelection, onClose }) => {
                 <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                   {r.name || r.id}
                 </div>
-                <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.5)" }}>
+                <div style={{ fontSize: 10.5, color: active ? colors.onPrimary : colors.mute, opacity: active ? 0.75 : 1 }}>
                   {r.id} · {r.owner || "unowned"}
                 </div>
               </span>

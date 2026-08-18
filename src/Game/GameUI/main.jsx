@@ -14,6 +14,7 @@ import {
   normalizeProvider,
   persistProviderSetting,
 } from "../AI/providerConfig.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 // The advisor drawer is user-resizable — drag its left edge (see advisor.jsx).
 // Width is kept in px so the drag maps 1:1 to the pointer, persisted in
@@ -31,19 +32,20 @@ const readAdvisorWidth = () => {
   } catch { /* private-mode storage — fall through to default */ }
   return clampAdvisorWidth(ADVISOR_DEFAULT_WIDTH);
 };
+// Design-system chrome (DESIGN.md / src/design/tokens.js): warm canvas-soft
+// surface + hairline border, no blur or drop shadow. Shared by the advisor
+// button and other fixed HUD widgets.
 const baseStyle = {
   position: "fixed",
-  backgroundColor: "rgba(17, 24, 39, 0.9)",
-  backdropFilter: "blur(4px)",
+  backgroundColor: colors.canvasSoft,
   zIndex: 9999,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  color: "white",
-  fontFamily: "sans-serif",
-  borderRadius: "12px",
-  border: "1px solid rgba(255,255,255,0.1)",
-  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
+  color: colors.primary,
+  fontFamily: fonts.sans,
+  borderRadius: rounded.md,
+  border: `1px solid ${colors.hairline}`,
 };
 const LazyAdvisorPanel = lazy(() =>
   import("./advisor").then((module) => ({ default: module.AdvisorPanel })),
@@ -76,16 +78,18 @@ const WebGLWarningPopup = () => (
       zIndex: 9999,
     }}
   >
+    {/* Design-system chrome: warm surface + hairline; the red heading/icon
+        stay so the popup still reads as an error at a glance. */}
     <div
       style={{
-        backgroundColor: "#1a1a2e",
-        border: "1px solid #e94560",
-        borderRadius: "12px",
+        backgroundColor: colors.canvasSoft,
+        border: `1px solid ${colors.hairline}`,
+        borderRadius: rounded.md,
         padding: "2rem",
         maxWidth: "420px",
         width: "90%",
-        color: "#eaeaea",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        color: colors.body,
+        fontFamily: fonts.sans,
         textAlign: "center",
       }}
     >
@@ -103,11 +107,11 @@ const WebGLWarningPopup = () => (
       <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.3rem", color: "#e94560" }}>
         WebGL Not Available
       </h2>
-      <p style={{ margin: "0 0 0.5rem", lineHeight: 1.6, color: "#ccc", fontSize: "0.95rem" }}>
-        This application requires <strong style={{ color: "#eaeaea" }}>WebGL</strong> to render
+      <p style={{ margin: "0 0 0.5rem", lineHeight: 1.6, color: colors.body, fontSize: "0.95rem" }}>
+        This application requires <strong style={{ color: colors.primary }}>WebGL</strong> to render
         the map, but it doesn't appear to be supported or enabled in your browser.
       </p>
-      <p style={{ margin: "0 0 1.5rem", lineHeight: 1.6, color: "#999", fontSize: "0.85rem" }}>
+      <p style={{ margin: "0 0 1.5rem", lineHeight: 1.6, color: colors.mute, fontSize: "0.85rem" }}>
         Try enabling hardware acceleration in your browser settings, updating your graphics
         drivers, or switching to a WebGL-supported browser such as Chrome or Firefox.
       </p>

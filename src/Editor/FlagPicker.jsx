@@ -6,10 +6,10 @@
 // A Netflix-style overlay for choosing a country's flag — built-in flags, the ones
 // already used on this map, or the community's — matching BasemapPicker exactly.
 //
-// Styling note: like BasemapPicker, this deliberately does NOT use editorStyles.js.
-// The picker family shares the game's Community-hub purple (#7c3aed), not the
-// editor chrome's blue ACCENT. Keeping the constants local (rather than importing
-// the editor's) is what makes the two pickers look like siblings.
+// Styling note: like BasemapPicker, the chrome is tokenized (warm canvas-soft +
+// hairlines, no blur/shadow) but the picker family keeps the game's
+// Community-hub purple (#7c3aed) where it marks community actions — the same
+// functional-identity exemption the Community hub itself uses.
 
 import { useEffect, useMemo, useState } from "react";
 import { listBuiltInFlags } from "../runtime/countryFlags.js";
@@ -23,19 +23,19 @@ import {
 import { FLAG_ACCEPT, fileToFlagDataUrl } from "./flagImage.js";
 import { listFlags, saveFlag, deleteFlag } from "../runtime/flagLibrary.js";
 import { useIsMobile } from "../runtime/useIsMobile.js";
+import { colors, rounded } from "../design/tokens.js";
 
 const overlay = {
   position: "fixed",
   inset: 0,
   // Same shell as BasemapPicker (120); 130 only so the two can't fight if both are
   // ever open. Mounted at MapEditor's root, NOT inside the selection panel: that
-  // panel has backdrop-filter, which makes a containing block for position:fixed —
-  // inside it this overlay resolved to the panel's 300x400 box at top:64 instead of
-  // the viewport, so its top was cut off and the Apply & Play / close buttons sat
+  // panel's chrome can create a containing block for position:fixed — inside it
+  // this overlay resolved to the panel's 300x400 box at top:64 instead of the
+  // viewport, so its top was cut off and the Apply & Play / close buttons sat
   // over it however high its z-index went.
   zIndex: 130,
-  background: "rgba(4,6,14,0.74)",
-  backdropFilter: "blur(4px)",
+  background: "rgba(43,38,34,0.74)", // colors.canvas as a warm scrim
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -46,11 +46,10 @@ const panel = {
   maxHeight: "88vh",
   display: "flex",
   flexDirection: "column",
-  background: "rgba(14,18,32,0.98)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "18px",
-  color: "#fff",
-  boxShadow: "0 24px 80px rgba(0,0,0,0.55)",
+  background: colors.canvasSoft,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.lg,
+  color: colors.ink,
   overflow: "hidden",
 };
 const headerBar = {
@@ -58,43 +57,46 @@ const headerBar = {
   alignItems: "center",
   gap: "0.6rem",
   padding: "0.85rem 1.1rem",
-  borderBottom: "1px solid rgba(255,255,255,0.08)",
+  borderBottom: `1px solid ${colors.hairline}`,
 };
 const bodyBox = { padding: "1.1rem", overflowY: "auto" };
-const rowTitle = { fontSize: "0.78rem", opacity: 0.6, margin: "0.2rem 0 0.5rem", letterSpacing: "0.04em" };
-const dim = { fontSize: "0.82rem", opacity: 0.6, padding: "0.6rem 0" };
+const rowTitle = { fontSize: "0.78rem", color: colors.mute, margin: "0.2rem 0 0.5rem", letterSpacing: "0.04em" };
+const dim = { fontSize: "0.82rem", color: colors.mute, padding: "0.6rem 0" };
 const cardSurface = {
   position: "relative",
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "10px",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.md,
   overflow: "hidden",
   cursor: "pointer",
 };
 const tabBtn = (active) => ({
-  background: active ? "rgba(124,58,237,0.9)" : "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: "999px",
-  color: "#fff",
+  // Active tab keeps the community purple (functional identity); inactive is
+  // neutral token chrome.
+  background: active ? "rgba(124,58,237,0.9)" : colors.canvas,
+  border: active ? "1px solid rgba(124,58,237,0.9)" : `1px solid ${colors.hairline}`,
+  borderRadius: rounded.sm,
+  color: colors.ink,
   cursor: "pointer",
   fontSize: "0.8rem",
   padding: "0.35rem 0.8rem",
 });
+// Primary CTA: the polarity flip (off-white fill + dark text), tight radius.
 const uploadBtn = {
-  background: "rgba(59,130,246,0.85)",
-  border: "1px solid rgba(255,255,255,0.14)",
-  borderRadius: "8px",
-  color: "#fff",
+  background: colors.primary,
+  border: `1px solid ${colors.primary}`,
+  borderRadius: rounded.sm,
+  color: colors.onPrimary,
   cursor: "pointer",
   fontSize: "0.8rem",
   padding: "0.4rem 0.7rem",
   whiteSpace: "nowrap",
 };
 const closeBtn = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: "8px",
-  color: "#fff",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.sm,
+  color: colors.ink,
   cursor: "pointer",
   fontSize: "0.9rem",
   lineHeight: 1,
@@ -113,7 +115,7 @@ const FlagCard = ({ title, subtitle, imageUrl, active, onClick, onPublish, onDel
     onClick={onClick}
     title={title}
   >
-    <div style={{ aspectRatio: "3 / 2", background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ aspectRatio: "3 / 2", background: colors.canvas, display: "flex", alignItems: "center", justifyContent: "center" }}>
       {imageUrl ? (
         <img
           src={imageUrl}
@@ -127,11 +129,11 @@ const FlagCard = ({ title, subtitle, imageUrl, active, onClick, onPublish, onDel
       )}
     </div>
     <div style={{ padding: "0.4rem 0.5rem" }}>
-      <div style={{ fontSize: "0.78rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
-      {subtitle && <div style={{ fontSize: "0.7rem", opacity: 0.55 }}>{subtitle}</div>}
+      <div style={{ fontSize: "0.78rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+      {subtitle && <div style={{ fontSize: "0.7rem", color: colors.mute }}>{subtitle}</div>}
     </div>
     {active && (
-      <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(124,58,237,0.9)", borderRadius: 6, fontSize: "0.65rem", padding: "0.1rem 0.35rem" }}>
+      <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(124,58,237,0.9)", borderRadius: rounded.sm, fontSize: "0.65rem", padding: "0.1rem 0.35rem" }}>
         ✓ In use
       </div>
     )}
@@ -141,8 +143,8 @@ const FlagCard = ({ title, subtitle, imageUrl, active, onClick, onPublish, onDel
         title="Remove from My flags"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
         style={{
-          position: "absolute", right: 6, bottom: 6, background: "rgba(0,0,0,0.6)",
-          border: "none", borderRadius: 6, color: "#fff", cursor: "pointer", fontSize: "0.7rem",
+          position: "absolute", right: 6, bottom: 6, background: "rgba(43,38,34,0.75)",
+          border: "none", borderRadius: rounded.sm, color: colors.ink, cursor: "pointer", fontSize: "0.7rem",
           lineHeight: 1, padding: "0.2rem 0.35rem",
         }}
       >
@@ -321,7 +323,7 @@ const FlagPicker = ({ open, onClose, ownerCode, currentFlag, mapFlags = {}, auth
             Upload and the close button all on one line. On mobile the search grows
             to fill its row and Upload drops its label to an icon. */}
         <div style={{ ...headerBar, flexWrap: "wrap", gap: isMobile ? "0.4rem" : "0.6rem" }}>
-          <div style={{ fontSize: isMobile ? "0.95rem" : "1.05rem", fontWeight: 800, marginRight: "0.4rem" }}>
+          <div style={{ fontSize: isMobile ? "0.95rem" : "1.05rem", fontWeight: 600, letterSpacing: "-0.2px", marginRight: "0.4rem" }}>
             Flags{ownerCode ? ` — ${ownerCode}` : ""}
           </div>
           <button type="button" style={tabBtn(tab === "mine")} onClick={() => setTab("mine")}>In the game</button>
@@ -331,8 +333,8 @@ const FlagPicker = ({ open, onClose, ownerCode, currentFlag, mapFlags = {}, auth
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search…"
             style={{
-              background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.14)",
-              borderRadius: 8, color: "#fff", fontSize: "0.8rem", padding: "0.35rem 0.6rem",
+              background: colors.canvas, border: `1px solid ${colors.hairline}`,
+              borderRadius: rounded.sm, color: colors.ink, fontSize: "0.8rem", padding: "0.35rem 0.6rem",
               width: isMobile ? "auto" : "9rem", flex: isMobile ? "1 1 6rem" : "0 0 auto", minWidth: "5rem",
             }}
           />
@@ -456,24 +458,24 @@ const FlagPicker = ({ open, onClose, ownerCode, currentFlag, mapFlags = {}, auth
                 <div style={grid}>
                   {filteredCommunity.map((post) => (
                     <div key={post.id} style={{ ...cardSurface, cursor: "default" }}>
-                      <div style={{ aspectRatio: "3 / 2", background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                      <div style={{ aspectRatio: "3 / 2", background: colors.canvas, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                         {post.imageUrl ? (
                           <img src={post.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                         ) : (
                           <span style={{ fontSize: "2rem", opacity: 0.6 }}>🚩</span>
                         )}
                         {post.fromScenario && (
-                          <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(124,58,237,0.85)", borderRadius: 6, color: "#fff", fontSize: "0.62rem", fontWeight: 700, padding: "0.15rem 0.35rem" }}>
+                          <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(124,58,237,0.85)", borderRadius: rounded.sm, color: "#fff", fontSize: "0.62rem", fontWeight: 600, padding: "0.15rem 0.35rem" }}>
                             {post.flagCount} flag{post.flagCount === 1 ? "" : "s"} · scenario
                           </span>
                         )}
                       </div>
                       <div style={{ padding: "0.4rem 0.5rem" }}>
-                        <div style={{ fontSize: "0.78rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: "0.78rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {post.official && <span title="Posted by the project">✓ </span>}
                           {post.title}
                         </div>
-                        <div style={{ fontSize: "0.7rem", opacity: 0.55 }}>by {post.author}</div>
+                        <div style={{ fontSize: "0.7rem", color: colors.mute }}>by {post.author}</div>
                         <button
                           type="button"
                           disabled={busyId === post.id}

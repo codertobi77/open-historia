@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useMap } from "react-map-gl/maplibre";
 import { useWorldState } from "../Map/useWorldState.js";
 import { useCountryDisplayName } from "../../runtime/polityNames.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 let _setSelection = null;
 let _currentSelection = null;
@@ -81,9 +82,9 @@ if (typeof document !== "undefined" && !document.getElementById(ANIM_ID)) {
 }
 
 const DetailRow = ({ label, value }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "11px", color: "rgba(255,255,255,0.6)", marginTop: "3px" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "11px", color: colors.mute, marginTop: "3px" }}>
     <span style={{ flexShrink: 0 }}>{label}</span>
-    <span style={{ color: "rgba(255,255,255,0.9)", textAlign: "right", wordBreak: "break-word" }}>{value}</span>
+    <span style={{ color: colors.ink, textAlign: "right", wordBreak: "break-word" }}>{value}</span>
   </div>
 );
 
@@ -200,19 +201,17 @@ const FeaturePopup = () => {
         animation: dismissing
           ? "featurePopupFadeOut 0.18s cubic-bezier(0.4, 0, 1, 1) both"
           : "featurePopupFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both",
-        fontFamily: "sans-serif",
+        fontFamily: fonts.sans,
       }}
     >
+      {/* Tokenized chrome: warm canvas-soft + hairline, no blur/shadow. */}
       <div
         style={{
-          backgroundColor: "rgba(17, 24, 39, 0.96)",
-          backdropFilter: "blur(4px)",
-          WebkitBackdropFilter: "blur(4px)",
-          borderRadius: "12px",
+          backgroundColor: colors.canvasSoft,
+          borderRadius: rounded.md,
           overflow: "hidden",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          color: "white",
+          border: `1px solid ${colors.hairline}`,
+          color: colors.ink,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "9px", padding: "10px 12px 8px" }}>
@@ -220,21 +219,21 @@ const FeaturePopup = () => {
             {isCity ? (feature.capital === "primary" ? "⭐" : "🏙") : emojiForKind(feature.kind)}
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: "13px", wordBreak: "break-word" }}>{feature.name}</div>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)" }}>
+            <div style={{ fontWeight: 600, fontSize: "13px", wordBreak: "break-word" }}>{feature.name}</div>
+            <div style={{ fontSize: "11px", color: colors.mute }}>
               Map Feature · {kind}
             </div>
           </div>
           <button
             onClick={() => _dismiss?.()}
             style={{
-              background: "rgba(17,24,39,0.7)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: "6px",
+              background: colors.canvas,
+              border: `1px solid ${colors.hairline}`,
+              borderRadius: rounded.sm,
               width: "20px",
               height: "20px",
               cursor: "pointer",
-              color: "rgba(255,255,255,0.5)",
+              color: colors.mute,
               fontSize: "11px",
               padding: 0,
               flexShrink: 0,
@@ -252,7 +251,7 @@ const FeaturePopup = () => {
           {feature.foundedAt ? <DetailRow label="Founded" value={feature.foundedAt} /> : null}
           <DetailRow label="Location" value={`${feature.lat.toFixed(2)}, ${feature.lng.toFixed(2)}`} />
           {feature.note ? (
-            <div style={{ marginTop: "8px", fontSize: "11px", lineHeight: 1.45, color: "rgba(255,255,255,0.75)" }}>
+            <div style={{ marginTop: "8px", fontSize: "11px", lineHeight: 1.45, color: colors.body }}>
               {feature.note}
             </div>
           ) : null}

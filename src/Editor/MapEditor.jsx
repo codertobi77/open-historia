@@ -33,6 +33,7 @@ import { migrateDocumentOwners, OWNER_SCHEMA } from "./documentMigration.js";
 import { useIsMobile } from "../runtime/useIsMobile.js";
 import { buildGameSeed } from "./exportPreset.js";
 import { panelSurface, inputStyle } from "./editorStyles.js";
+import { colors, rounded } from "../design/tokens.js";
 import FmgPanel from "./fmg/FmgPanel.jsx";
 import { generateFmgWorld } from "./fmg/fmgDriver.js";
 import { fmgToEditorSeed } from "./fmg/fmgImport.js";
@@ -53,10 +54,12 @@ const MapEditor = ({ onClose, scenarioName, onApplyToScenario, initialMap } = {}
   const [customBg, setCustomBg] = useState(null); // live background applied to the map
   const [customBgId, setCustomBgId] = useState(null); // library basemap id applied (null = built-in / doc's own)
   const [basemapPickerOpen, setBasemapPickerOpen] = useState(false);
-  // Which country's flag we're picking, or null. Owned HERE, not in the inspector:
-  // panelSurface has backdrop-filter, which makes a containing block for
-  // position:fixed — an overlay rendered inside the panel gets clipped to it and
-  // trapped under its z-index, whatever z-index the overlay itself asks for.
+  // Which country's flag we're picking, or null. Owned HERE, not in the
+  // inspector, and the picker renders at the editor root: historically
+  // panelSurface carried backdrop-filter, which made a containing block for
+  // position:fixed and trapped any overlay rendered inside the panel. The glass
+  // chrome is gone, but keeping the overlay outside the panel still guarantees
+  // it stacks above every panel regardless of z-index.
   const [flagPickerFor, setFlagPickerFor] = useState(null);
   // Session-only tracing aid ({ dataUrl, aspect, opacity, visible }) — kept out
   // of the document on purpose so it can never leak into saves or game exports.
@@ -488,16 +491,17 @@ const MapEditor = ({ onClose, scenarioName, onApplyToScenario, initialMap } = {}
                 ...panelSurface,
                 padding: isMobile ? "9px 11px" : "8px 15px",
                 cursor: applying ? "default" : "pointer",
-                color: "white",
-                fontWeight: 700,
+                // Primary CTA: off-white fill + dark text (the polarity flip).
+                color: colors.onPrimary,
+                fontWeight: 600,
                 fontSize: isMobile ? 16 : 13,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: isMobile ? 0 : 6,
-                background: applying ? "rgba(59,130,246,0.35)" : "rgba(59,130,246,0.85)",
-                border: "1px solid rgba(147,197,253,0.5)",
-                opacity: applying ? 0.8 : 1,
+                background: colors.primary,
+                border: `1px solid ${colors.primary}`,
+                opacity: applying ? 0.6 : 1,
               }}
             >
               {isMobile ? (applying ? "…" : "▶") : (applying ? "Applying…" : "▶ Apply & Play")}
@@ -525,8 +529,8 @@ const MapEditor = ({ onClose, scenarioName, onApplyToScenario, initialMap } = {}
                 ...panelSurface,
                 padding: isMobile ? "9px 11px" : "8px 13px",
                 cursor: "pointer",
-                color: "white",
-                fontWeight: 700,
+                color: colors.ink,
+                fontWeight: 600,
                 fontSize: isMobile ? 16 : 13,
                 display: "flex",
                 alignItems: "center",
@@ -566,9 +570,11 @@ const MapEditor = ({ onClose, scenarioName, onApplyToScenario, initialMap } = {}
             fontSize: 12,
           }}
         >
-          <span style={{ color: "rgba(255,255,255,0.72)" }}>Paint owner</span>
+          <span style={{ color: colors.bodyStrong }}>Paint owner</span>
+          {/* The owner color swatch is gameplay data (an ownership fill), so it
+              keeps its rgb() value — a DESIGN.md data-color exemption. */}
           {d.colors[paintOwner] && (
-            <span style={{ width: 16, height: 16, borderRadius: 4, border: "1px solid rgba(255,255,255,0.3)", background: `rgb(${d.colors[paintOwner].join(",")})` }} />
+            <span style={{ width: 16, height: 16, borderRadius: rounded.xs, border: `1px solid ${colors.hairline}`, background: `rgb(${d.colors[paintOwner].join(",")})` }} />
           )}
           <input
             value={paintOwner}
@@ -576,7 +582,7 @@ const MapEditor = ({ onClose, scenarioName, onApplyToScenario, initialMap } = {}
             placeholder="e.g. France"
             style={{ ...inputStyle, width: 160, padding: "4px 7px" }}
           />
-          <span style={{ color: "rgba(255,255,255,0.4)" }}>click regions · empty = unowned</span>
+          <span style={{ color: colors.mute }}>click regions · empty = unowned</span>
         </div>
       )}
 

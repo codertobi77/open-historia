@@ -10,6 +10,7 @@ import {
   removeUnit,
 } from "../Map/unitsController.js";
 import { useCountryDisplayName } from "../../runtime/polityNames.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 let _setSelection = null;
 let _currentSelection = null;
@@ -68,11 +69,14 @@ if (typeof document !== "undefined" && !document.getElementById(ANIM_ID)) {
 
 const ActionButton = ({ label, onClick, tone = "neutral" }) => {
   const [hovered, setHovered] = useState(false);
+  // Primary = polarity flip (off-white fill + dark text); danger keeps its red
+  // tint as a functional/semantic color, not brand chrome.
   const tones = {
-    neutral: "rgba(255,255,255,0.12)",
-    danger: "rgba(220,70,70,0.25)",
-    primary: "rgba(59,130,246,0.3)",
+    neutral: { background: colors.canvas, color: colors.ink },
+    danger: { background: "rgba(220,70,70,0.25)", color: colors.ink },
+    primary: { background: colors.primary, color: colors.onPrimary },
   };
+  const toneStyle = tones[tone] ?? tones.neutral;
   return (
     <button
       onClick={onClick}
@@ -80,10 +84,10 @@ const ActionButton = ({ label, onClick, tone = "neutral" }) => {
       onMouseLeave={() => setHovered(false)}
       style={{
         flex: 1,
-        background: hovered ? "rgba(255,255,255,0.18)" : tones[tone],
-        border: "1px solid rgba(255,255,255,0.15)",
-        borderRadius: "6px",
-        color: "rgba(255,255,255,0.9)",
+        background: hovered && tone !== "primary" ? colors.canvasSoft : toneStyle.background,
+        border: `1px solid ${tone === "primary" ? colors.primary : colors.hairline}`,
+        borderRadius: rounded.sm,
+        color: toneStyle.color,
         cursor: "pointer",
         fontSize: "11px",
         fontWeight: 600,
@@ -222,39 +226,37 @@ const UnitPopup = () => {
         animation: dismissing
           ? "unitPopupFadeOut 0.18s cubic-bezier(0.4, 0, 1, 1) both"
           : "unitPopupFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both",
-        fontFamily: "sans-serif",
+        fontFamily: fonts.sans,
       }}
     >
+      {/* Tokenized chrome: warm canvas-soft + hairline, no blur/shadow. */}
       <div
         style={{
-          backgroundColor: "rgba(17, 24, 39, 0.96)",
-          backdropFilter: "blur(4px)",
-          WebkitBackdropFilter: "blur(4px)",
-          borderRadius: "12px",
+          backgroundColor: colors.canvasSoft,
+          borderRadius: rounded.md,
           overflow: "hidden",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          color: "white",
+          border: `1px solid ${colors.hairline}`,
+          color: colors.ink,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "9px", padding: "10px 12px 8px" }}>
           <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{TYPE_GLYPH[unit.type] ?? "🛡"}</span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: "13px", wordBreak: "break-word" }}>{unit.name}</div>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)" }}>
+            <div style={{ fontWeight: 600, fontSize: "13px", wordBreak: "break-word" }}>{unit.name}</div>
+            <div style={{ fontSize: "11px", color: colors.mute }}>
               {TYPE_LABEL[unit.type] ?? unit.type} · {ownerName}
             </div>
           </div>
           <button
             onClick={() => _dismiss?.()}
             style={{
-              background: "rgba(17,24,39,0.7)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: "6px",
+              background: colors.canvas,
+              border: `1px solid ${colors.hairline}`,
+              borderRadius: rounded.sm,
               width: "20px",
               height: "20px",
               cursor: "pointer",
-              color: "rgba(255,255,255,0.5)",
+              color: colors.mute,
               fontSize: "11px",
               padding: 0,
               flexShrink: 0,
@@ -265,11 +267,13 @@ const UnitPopup = () => {
         </div>
 
         <div style={{ padding: "0 12px 10px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "rgba(255,255,255,0.7)", marginBottom: "3px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: colors.body, marginBottom: "3px" }}>
             <span>Strength</span>
-            <span style={{ fontWeight: 600, color: "white" }}>{unit.strength}</span>
+            <span style={{ fontWeight: 600, color: colors.ink }}>{unit.strength}</span>
           </div>
-          <div style={{ height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.12)", overflow: "hidden" }}>
+          {/* Strength bar green/amber/red is unit-strength data visualization —
+              a DESIGN.md functional-color exemption. */}
+          <div style={{ height: "6px", borderRadius: rounded.sm, background: colors.canvas, overflow: "hidden" }}>
             <div
               style={{
                 width: `${strengthPct}%`,
@@ -279,13 +283,13 @@ const UnitPopup = () => {
             />
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "rgba(255,255,255,0.6)", marginTop: "7px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: colors.mute, marginTop: "7px" }}>
             <span>Status</span>
-            <span style={{ color: "rgba(255,255,255,0.9)", textTransform: "capitalize" }}>{unit.status}</span>
+            <span style={{ color: colors.ink, textTransform: "capitalize" }}>{unit.status}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "rgba(255,255,255,0.6)", marginTop: "3px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: colors.mute, marginTop: "3px" }}>
             <span>Location</span>
-            <span style={{ color: "rgba(255,255,255,0.85)" }}>
+            <span style={{ color: colors.bodyStrong }}>
               {unit.lat.toFixed(1)}, {unit.lng.toFixed(1)}
             </span>
           </div>
@@ -297,7 +301,7 @@ const UnitPopup = () => {
               <ActionButton label="Disband" onClick={disband} />
             </div>
           ) : (
-            <div style={{ marginTop: "9px", fontSize: "10px", color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
+            <div style={{ marginTop: "9px", fontSize: "10px", color: colors.mute, textAlign: "center" }}>
               Enemy unit — select one of your own units to attack it.
             </div>
           )}

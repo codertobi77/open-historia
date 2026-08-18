@@ -14,6 +14,7 @@ import {
 } from "../../runtime/gameState.js";
 import FloatPanel from "./FloatPanel.jsx";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 dayjs.extend(advancedFormat);
 
@@ -113,10 +114,10 @@ const ActionItem = ({ action, onDelete }) => {
         onMouseLeave={() => setHovered(false)}
         style={{
             alignItems: "center",
-            backgroundColor: hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: "10px",
-            color: "rgba(255,255,255,0.85)",
+            backgroundColor: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.sm,
+            color: colors.bodyStrong,
             display: "flex",
             gap: "0.5rem",
             justifyContent: "space-between",
@@ -127,16 +128,16 @@ const ActionItem = ({ action, onDelete }) => {
         >
         <div style={{ flex: 1, minWidth: 0 }}>
         {showTitle && (
-            <div style={{ color: "rgba(255,255,255,0.95)", fontSize: "0.78rem", fontWeight: 700, marginBottom: "0.15rem" }}>
+            <div style={{ color: colors.primary, fontSize: "0.78rem", fontWeight: 700, marginBottom: "0.15rem" }}>
             {normalized.title}
             </div>
         )}
-        <div style={{ color: "rgba(255,255,255,0.82)", fontSize: "0.82rem", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+        <div style={{ color: colors.body, fontSize: "0.82rem", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
         {label}
         </div>
         <div
         style={{
-            color: "rgba(255,255,255,0.38)",
+            color: colors.mute,
             fontSize: "0.68rem",
             letterSpacing: "0.06em",
             marginTop: "0.25rem",
@@ -176,18 +177,18 @@ const ActionItem = ({ action, onDelete }) => {
 const SuggestionCard = ({ topic, onQueue, queuedIds }) => (
     <div
     style={{
-        background: "rgba(255,255,255,0.04)",
-                                                border: "1px solid rgba(255,255,255,0.08)",
-                                                borderRadius: "12px",
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                gap: "0.55rem",
-                                                padding: "0.7rem 0.8rem",
+        background: colors.canvas,
+        border: `1px solid ${colors.hairline}`,
+        borderRadius: rounded.sm,
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.55rem",
+        padding: "0.7rem 0.8rem",
     }}
     >
     <div>
-    <div style={{ color: "rgba(255,255,255,0.94)", fontSize: "0.8rem", fontWeight: 700 }}>{topic.title}</div>
-    <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.76rem", lineHeight: "1.5", marginTop: "0.2rem" }}>
+    <div style={{ color: colors.primary, fontSize: "0.8rem", fontWeight: 700 }}>{topic.title}</div>
+    <div style={{ color: colors.mute, fontSize: "0.76rem", lineHeight: "1.5", marginTop: "0.2rem" }}>
     {topic.description}
     </div>
     </div>
@@ -201,12 +202,14 @@ const SuggestionCard = ({ topic, onQueue, queuedIds }) => (
             disabled={isQueued}
             onClick={() => onQueue(action)}
             style={{
-                background: isQueued ? "rgba(34,197,94,0.12)" : "rgba(109,40,217,0.12)",
-                border: isQueued ? "1px solid rgba(74,222,128,0.35)" : "1px solid rgba(139,92,246,0.24)",
-                borderRadius: "10px",
-                color: "rgba(255,255,255,0.9)",
+                // Queued keeps a green success tint (functional color);
+                // unqueued = neutral canvas + hairline.
+                background: isQueued ? "rgba(34,197,94,0.12)" : colors.canvasSoft,
+                border: isQueued ? "1px solid rgba(74,222,128,0.35)" : `1px solid ${colors.hairline}`,
+                borderRadius: rounded.sm,
+                color: colors.bodyStrong,
                 cursor: isQueued ? "default" : "pointer",
-                fontFamily: "sans-serif",
+                fontFamily: fonts.sans,
                 padding: "0.55rem 0.7rem",
                 textAlign: "left",
             }}
@@ -214,7 +217,7 @@ const SuggestionCard = ({ topic, onQueue, queuedIds }) => (
             <div style={{ fontSize: "0.76rem", fontWeight: 700 }}>
             {isQueued ? `✓ Queued — ${action.title}` : action.title}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.62)", fontSize: "0.74rem", lineHeight: "1.45", marginTop: "0.18rem" }}>
+            <div style={{ color: colors.mute, fontSize: "0.74rem", lineHeight: "1.45", marginTop: "0.18rem" }}>
             {action.text}
             </div>
             </button>
@@ -422,7 +425,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem", padding: "0.875rem 1.25rem", flex: 1, minHeight: 0, overflow: "hidden" }}>
         <p
         style={{
-            color: "rgba(255,255,255,0.75)",
+            color: colors.body,
             fontSize: "0.82rem",
             lineHeight: "1.55",
             margin: 0,
@@ -431,14 +434,15 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         Submit actions for {countryDisplayName} for {gameDate}. Your actions will affect how the game world responds.
         </p>
 
+        {/* Secondary buttons: canvas fill + hairline, per the design language. */}
         <button
         type="button"
         onClick={onOpenAdvisor}
         style={{
-            background: "rgba(109, 40, 217, 0.15)",
-            border: "1px solid rgba(139, 92, 246, 0.4)",
-            borderRadius: "10px",
-            color: "rgba(196, 165, 255, 0.95)",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.sm,
+            color: colors.bodyStrong,
             cursor: "pointer",
             fontSize: "0.82rem",
             fontWeight: 500,
@@ -446,14 +450,6 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             padding: "0.55rem 1rem",
             transition: "background 0.15s, border-color 0.15s",
             width: "100%",
-        }}
-        onMouseEnter={(event) => {
-            event.currentTarget.style.background = "rgba(109, 40, 217, 0.28)";
-            event.currentTarget.style.borderColor = "rgba(139,92,246,0.65)";
-        }}
-        onMouseLeave={(event) => {
-            event.currentTarget.style.background = "rgba(109, 40, 217, 0.15)";
-            event.currentTarget.style.borderColor = "rgba(139,92,246,0.4)";
         }}
         >
         Help brainstorm actions
@@ -464,10 +460,10 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         onClick={refreshSuggestions}
         style={{
             alignItems: "center",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: "10px",
-            color: "rgba(255,255,255,0.82)",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.sm,
+            color: colors.bodyStrong,
             cursor: "pointer",
             display: "flex",
             fontSize: "0.8rem",
@@ -476,14 +472,6 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             padding: "0.52rem 1rem",
             transition: "background 0.15s, border-color 0.15s",
             width: "100%",
-        }}
-        onMouseEnter={(event) => {
-            event.currentTarget.style.background = "rgba(255,255,255,0.09)";
-            event.currentTarget.style.borderColor = "rgba(255,255,255,0.18)";
-        }}
-        onMouseLeave={(event) => {
-            event.currentTarget.style.background = "rgba(255,255,255,0.05)";
-            event.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
         }}
         >
         {isSuggesting && <SpinnerRing size={14} />}
@@ -502,7 +490,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             }}
             >
             {hasRequestedSuggestions && !isSuggesting && suggestions.length === 0 && (
-                <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.78rem", fontStyle: "italic", margin: 0 }}>
+                <p style={{ color: colors.mute, fontSize: "0.78rem", fontStyle: "italic", margin: 0 }}>
                 No AI suggestions generated yet.
                 </p>
             )}
@@ -515,7 +503,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
         <p
         style={{
-            color: "rgba(255,255,255,0.9)",
+            color: colors.bodyStrong,
             fontSize: "0.78rem",
             fontWeight: 700,
             letterSpacing: "0.06em",
@@ -537,7 +525,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         }}
         >
         {submittedActions.length === 0 && (
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.8rem", fontStyle: "italic", margin: 0 }}>
+            <p style={{ color: colors.mute, fontSize: "0.8rem", fontStyle: "italic", margin: 0 }}>
             No actions submitted yet.
             </p>
         )}
@@ -551,8 +539,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         <div
         style={{
             alignItems: "center",
-            backgroundColor: "rgba(0,0,0,0.2)",
-            borderTop: "1px solid rgba(255,255,255,0.07)",
+            borderTop: `1px solid ${colors.hairline}`,
             display: "flex",
             gap: "0.5rem",
             padding: "0.75rem 1rem",
@@ -568,12 +555,12 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         onChange={(event) => setInputValue(event.target.value)}
         onKeyDown={handleKeyDown}
         style={{
-            background: "rgba(0,0,0,0.2)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "10px",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.sm,
             boxSizing: "border-box",
-            color: "white",
-            fontFamily: "sans-serif",
+            color: colors.primary,
+            fontFamily: fonts.sans,
             fontSize: "0.82rem",
             outline: "none",
             padding: "0.7rem 2.8rem 0.7rem 0.85rem",
@@ -585,10 +572,10 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             width: "100%",
         }}
         onFocus={(event) => {
-            event.target.style.borderColor = "rgba(139,92,246,0.5)";
+            event.target.style.borderColor = colors.primary;
         }}
         onBlur={(event) => {
-            event.target.style.borderColor = "rgba(255,255,255,0.12)";
+            event.target.style.borderColor = colors.hairline;
         }}
         />
         <button
@@ -600,8 +587,8 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             alignItems: "center",
             background: "none",
             border: "none",
-            borderRadius: "8px",
-            color: inputValue.trim() ? "rgba(196,165,255,0.78)" : "rgba(196,165,255,0.35)",
+            borderRadius: rounded.sm,
+            color: inputValue.trim() ? colors.body : colors.mute,
             cursor: inputValue.trim() ? "pointer" : "default",
             display: "flex",
             height: "1.8rem",
@@ -613,40 +600,32 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             width: "1.8rem",
         }}
         >
-        {isImproving ? <SpinnerRing size={14} tone="rgba(196,165,255,0.9)" /> : <SparkleIcon />}
+        {isImproving ? <SpinnerRing size={14} tone={colors.body} /> : <SparkleIcon />}
         </button>
         </div>
 
+        {/* Send = polarity flip (off-white fill, dark icon); disabled dims. */}
         <button
         type="button"
         onClick={handleSubmit}
         disabled={!inputValue.trim() || isSubmitting || isImproving}
         style={{
             alignItems: "center",
-            background: inputValue.trim() && !isSubmitting && !isImproving ? "#3b82f6" : "rgba(59,130,246,0.3)",
+            background: colors.primary,
             border: "none",
-            borderRadius: "10px",
-            color: "white",
+            borderRadius: rounded.sm,
+            color: colors.onPrimary,
             cursor: inputValue.trim() && !isSubmitting && !isImproving ? "pointer" : "not-allowed",
             display: "flex",
             flexShrink: 0,
             height: "2.2rem",
             justifyContent: "center",
-            transition: "background 0.15s",
+            opacity: inputValue.trim() && !isSubmitting && !isImproving ? 1 : 0.45,
+            transition: "opacity 0.15s",
             width: "2.2rem",
         }}
-        onMouseEnter={(event) => {
-            if (inputValue.trim() && !isSubmitting && !isImproving) {
-                event.currentTarget.style.background = "#2563eb";
-            }
-        }}
-        onMouseLeave={(event) => {
-            if (inputValue.trim() && !isSubmitting && !isImproving) {
-                event.currentTarget.style.background = "#3b82f6";
-            }
-        }}
         >
-        {isSubmitting ? <SpinnerRing size={14} /> : <SendIcon />}
+        {isSubmitting ? <SpinnerRing size={14} tone={colors.onPrimary} /> : <SendIcon />}
         </button>
         </div>
         </>
@@ -657,16 +636,14 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
             {isMobile ? (
                 <div
                     style={{
-                        backdropFilter: "blur(8px)",
-                        backgroundColor: "rgba(17, 24, 39, 0.95)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "16px",
+                        backgroundColor: colors.canvasSoft,
+                        border: `1px solid ${colors.hairline}`,
+                        borderRadius: rounded.md,
                         bottom: isOpen ? "4.25rem" : "-30rem",
-                        boxShadow: "-4px 0 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
-                        color: "white",
+                        color: colors.primary,
                         display: "flex",
                         flexDirection: "column",
-                        fontFamily: "sans-serif",
+                        fontFamily: fonts.sans,
                         height: "min(calc(100vh - 9rem), max(calc(100vh - 16rem), 30rem))",
                         minHeight: "10rem",
                         left: "0rem",
@@ -683,7 +660,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
                     <div
                         style={{
                             alignItems: "center",
-                            borderBottom: "1px solid rgba(255,255,255,0.07)",
+                            borderBottom: `1px solid ${colors.hairline}`,
                             display: "flex",
                             justifyContent: "space-between",
                             padding: "1rem 1.25rem 0.75rem",
@@ -697,21 +674,13 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
                             style={{
                                 background: "none",
                                 border: "none",
-                                borderRadius: "6px",
-                                color: "rgba(255,255,255,0.5)",
+                                borderRadius: rounded.sm,
+                                color: colors.mute,
                                 cursor: "pointer",
                                 fontSize: "1.1rem",
                                 lineHeight: 1,
                                 padding: "0.15rem 0.3rem",
-                                transition: "color 0.15s, background 0.15s",
-                            }}
-                            onMouseEnter={(event) => {
-                                event.currentTarget.style.color = "white";
-                                event.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                            }}
-                            onMouseLeave={(event) => {
-                                event.currentTarget.style.color = "rgba(255,255,255,0.5)";
-                                event.currentTarget.style.background = "none";
+                                transition: "color 0.15s",
                             }}
                         >
                             {"\u2715"}
@@ -759,35 +728,25 @@ const Actions = ({ onOpenAdvisor, hovered, setHovered, isOpen, onToggle }) => {
             onOpenAdvisor={onOpenAdvisor}
             />
         )}
+        {/* Toolbar launcher: canvas-soft square + hairline; open state flips
+            to the off-white fill (no gradients, no shadows). */}
         <button
         type="button"
         title="Actions"
         style={{
             alignItems: "center",
-            background: isOpen
-            ? "linear-gradient(145deg, rgba(109,40,217,0.4), rgba(76,29,149,0.4))"
-            : hovered
-            ? "linear-gradient(145deg, rgba(40,55,80,0.95), rgba(20,30,50,0.95))"
-            : "linear-gradient(145deg, rgba(30,42,65,0.95), rgba(15,22,40,0.95))",
-            border: hovered
-            ? "1px solid rgba(255,255,255,0.2)"
-            : isOpen
-            ? "1px solid rgba(139,92,246,0.5)"
-            : "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "10px",
-            boxShadow: hovered
-            ? "inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 8px rgba(0,0,0,0.4)"
-            : "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.35)",
-            color: "white",
+            background: isOpen ? colors.primary : colors.canvasSoft,
+            border: `1px solid ${isOpen ? colors.primary : colors.hairline}`,
+            borderRadius: rounded.md,
+            color: isOpen ? colors.onPrimary : colors.primary,
             cursor: "pointer",
             display: "flex",
-            fontFamily: "sans-serif",
+            fontFamily: fonts.sans,
             fontSize: "1.2rem",
             height: "3.3rem",
             justifyContent: "center",
             outline: "none",
-            transform: hovered ? "translateY(-1px)" : "translateY(0)",
-            transition: "all 0.12s ease",
+            transition: "background 0.12s ease, color 0.12s ease",
             width: "3.3rem",
         }}
         onMouseEnter={() => setHovered(true)}

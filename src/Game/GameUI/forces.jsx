@@ -13,6 +13,7 @@ import { UNIT_TYPES } from "../../runtime/gameState.js";
 import { ensurePolityNames, polityDisplayName } from "../../runtime/polityNames.js";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
 import { FloatPanel } from "./FloatPanel.jsx";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 const TYPE_LABEL = {
   infantry: "Infantry",
@@ -37,15 +38,26 @@ const MODE_HINT = {
   attack: "Click an enemy unit, a city, or a structure to attack",
 };
 
+// Design-system chrome (DESIGN.md / src/design/tokens.js): warm canvas-soft
+// surface + hairline border, no blur or drop shadow. Used by the mode banner
+// and the mobile (non-FloatPanel) panel box.
 const surface = {
-  backgroundColor: "rgba(17, 24, 39, 0.92)",
-  backdropFilter: "blur(6px)",
-  WebkitBackdropFilter: "blur(6px)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: "12px",
-  color: "white",
-  fontFamily: "sans-serif",
-  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+  backgroundColor: colors.canvasSoft,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.md,
+  color: colors.primary,
+  fontFamily: fonts.sans,
+};
+
+// Form controls inside the panel: darker canvas fill + hairline (inputs read
+// as recesses against the canvas-soft panel, per the design language).
+const fieldStyle = {
+  background: colors.canvas,
+  color: colors.primary,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.sm,
+  padding: "4px",
+  fontSize: "12px",
 };
 
 const UnitRow = ({ unit, dimmed, onClick }) => (
@@ -56,13 +68,13 @@ const UnitRow = ({ unit, dimmed, onClick }) => (
       alignItems: "center",
       gap: "8px",
       width: "100%",
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: "8px",
+      background: colors.canvas,
+      border: `1px solid ${colors.hairline}`,
+      borderRadius: rounded.sm,
       padding: "6px 8px",
       marginBottom: "5px",
       cursor: "pointer",
-      color: "white",
+      color: colors.bodyStrong,
       textAlign: "left",
       opacity: dimmed ? 0.65 : 1,
     }}
@@ -72,7 +84,7 @@ const UnitRow = ({ unit, dimmed, onClick }) => (
       <div style={{ fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {unit.name}
       </div>
-      <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.55)" }}>
+      <div style={{ fontSize: "10px", color: colors.mute }}>
         {TYPE_LABEL[unit.type] ?? unit.type} · {polityDisplayName(unit.ownerCode)} · {unit.status}
       </div>
     </div>
@@ -149,14 +161,14 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
   // Forces header), desktop renders it inside FloatPanel (which draws the header).
   const panelBody = (
     <>
-      {/* Deploy controls */}
-      <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px", padding: "8px", marginBottom: "10px" }}>
-        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", marginBottom: "6px" }}>Deploy a unit</div>
+      {/* Deploy controls — hairline grouping box over the panel surface. */}
+      <div style={{ border: `1px solid ${colors.hairline}`, borderRadius: rounded.sm, padding: "8px", marginBottom: "10px" }}>
+        <div style={{ fontSize: "11px", color: colors.mute, marginBottom: "6px" }}>Deploy a unit</div>
         <div style={{ display: "flex", gap: "5px", marginBottom: "6px" }}>
           <select
             value={deployType}
             onChange={(e) => setDeployType(e.target.value)}
-            style={{ flex: 1, background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px" }}
+            style={{ flex: 1, ...fieldStyle }}
           >
             {availableTypes.map((t) => (
               <option key={t} value={t} style={{ color: "black" }}>
@@ -171,7 +183,7 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
             value={deployStrength}
             onChange={(e) => setDeployStrength(e.target.value)}
             title="Strength"
-            style={{ width: "4rem", background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px" }}
+            style={{ width: "4rem", ...fieldStyle }}
           />
         </div>
         <input
@@ -179,22 +191,23 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
           value={deployName}
           placeholder="Unit name (optional)"
           onChange={(e) => setDeployName(e.target.value)}
-          style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", color: "white", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", padding: "4px", fontSize: "12px", marginBottom: "6px" }}
+          style={{ width: "100%", boxSizing: "border-box", marginBottom: "6px", ...fieldStyle }}
         />
+        {/* Primary action: polarity flip (off-white fill, dark label). */}
         <button
           onClick={startDeploy}
-          style={{ width: "100%", background: "rgba(59,130,246,0.35)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "white", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "6px 0" }}
+          style={{ width: "100%", background: colors.primary, border: `1px solid ${colors.primary}`, borderRadius: rounded.sm, color: colors.onPrimary, cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "6px 0" }}
         >
           Place on map →
         </button>
       </div>
 
       <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
-        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", margin: "0 0 5px" }}>
+        <div style={{ fontSize: "11px", color: colors.mute, margin: "0 0 5px" }}>
           Your units ({myUnits.length})
         </div>
         {myUnits.length === 0 && (
-          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginBottom: "8px" }}>
+          <div style={{ fontSize: "11px", color: colors.mute, marginBottom: "8px" }}>
             None yet — deploy a unit above, or jump time to let the war unfold.
           </div>
         )}
@@ -204,7 +217,7 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
 
         {otherUnits.length > 0 && (
           <>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", margin: "8px 0 5px" }}>
+            <div style={{ fontSize: "11px", color: colors.mute, margin: "8px 0 5px" }}>
               Other forces ({otherUnits.length})
             </div>
             {otherUnits.map((u) => (
@@ -236,12 +249,13 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
           }}
         >
           <span>{MODE_HINT[mode.kind] ?? "Select a target"}</span>
+          {/* Destructive cancel keeps its red tint: functional color. */}
           <button
             onClick={() => clearInteractionMode()}
             style={{
               background: "rgba(220,70,70,0.25)",
               border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "6px",
+              borderRadius: rounded.sm,
               color: "white",
               cursor: "pointer",
               fontSize: "11px",
@@ -272,7 +286,7 @@ export const ForcesPanel = ({ mapRef, topOffset = "0px", open = false, onToggle 
             <strong style={{ fontSize: "14px" }}>Forces</strong>
             <button
               onClick={() => setOpen(false)}
-              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: "14px" }}
+              style={{ background: "none", border: "none", color: colors.mute, cursor: "pointer", fontSize: "14px" }}
             >
               ✕
             </button>

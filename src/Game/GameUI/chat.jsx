@@ -15,6 +15,11 @@ import { flagEmojiFromGid } from "../../runtime/countryFlags.js";
 import { readChatsState, writeChatsState } from "../../runtime/gameState.js";
 import FloatPanel from "./FloatPanel.jsx";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
+// Design tokens (DESIGN.md / tokens.js): warm canvas-soft surface + hairline
+// replaces the legacy glass chrome (rgba/blur/shadow, 16px radius, blue #3b82f6
+// accent). Nation color-mix bubbles (data viz) and unread notification badges
+// (status pills) stay per the exemption.
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 
@@ -112,9 +117,9 @@ const markdownStyles = `
 .chat-markdown p:last-child { margin-bottom: 0; }
 .chat-markdown ul, .chat-markdown ol { margin: 0.25rem 0 0.5rem 1.25rem; padding: 0; }
 .chat-markdown li { margin-bottom: 0.2rem; }
-.chat-markdown strong { color: rgba(255,255,255,0.95); }
-.chat-markdown em { color: rgba(255,255,255,0.75); }
-.chat-markdown blockquote { border-left: 2px solid rgba(139,92,246,0.6); margin: 0.5rem 0; padding-left: 0.75rem; color: rgba(255,255,255,0.6); }
+.chat-markdown strong { color: #f7f5f0; }
+.chat-markdown em { color: #dad2c1; }
+.chat-markdown blockquote { border-left: 2px solid #3f3a36; margin: 0.5rem 0; padding-left: 0.75rem; color: #c9c0ad; }
 `;
 
 const MarkdownStyleInjector = () => {
@@ -191,9 +196,9 @@ const MessageBubble = ({ msg }) => {
             <span style={{
                 display: "block",
                 fontSize: "0.7rem",
-                color: "rgba(255,255,255,0.4)",
-                       marginBottom: "0.25rem",
-                       whiteSpace: "nowrap",
+                color: colors.mute,
+                marginBottom: "0.25rem",
+                whiteSpace: "nowrap",
             }}>
             {isError ? "⚠️ Error" : `${flag} ${msg.speaker}`}
             </span>
@@ -207,15 +212,18 @@ const MessageBubble = ({ msg }) => {
             </div>
         )}
 
-        {/* Player-typed text stays verbatim under UI translation. */}
+        {/* Player-typed text stays verbatim under UI translation. Player bubble
+            uses the polarity flip (primary off-white fill, dark onPrimary text)
+            matching advisor user messages and primary CTA convention. */}
         <div data-no-translate={isPlayer ? "" : undefined} style={{
             padding: "0.6rem 0.85rem",
-            borderRadius: isPlayer ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+            borderRadius: isPlayer ? `${rounded.md}px ${rounded.md}px 2px ${rounded.md}px` : `${rounded.md}px ${rounded.md}px ${rounded.md}px 2px`,
             backgroundColor: isPlayer
-            ? "#3b82f6"
+            ? colors.primary
             : isError
             ? "rgba(239,68,68,0.2)"
-            : `color-mix(in srgb, ${accentColor} 5%, rgba(30,35,50,0.95))`,
+            : `color-mix(in srgb, ${accentColor} 5%, ${colors.canvasSoft})`,
+            color: isPlayer ? colors.onPrimary : colors.ink,
             fontSize: "0.85rem", lineHeight: "1.5", whiteSpace: "pre-wrap", wordBreak: "break-word",
             border: isPlayer
             ? "none"
@@ -231,7 +239,7 @@ const MessageBubble = ({ msg }) => {
         </div>
 
         {!isPlayer && msg.time && (
-            <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.3)", marginTop: "0.25rem", display: "block" }}>
+            <span style={{ fontSize: "0.65rem", color: colors.mute, marginTop: "0.25rem", display: "block" }}>
             {new Date(msg.time).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" })}
             </span>
         )}
@@ -262,15 +270,15 @@ const ReactionBubble = ({ country, emoji, flag, code }) => {
             left: pos.x,
             top: pos.y - 2,
             transform: "translate(-50%, -100%)",
-                                                    backgroundColor: "rgba(17,24,39,0.95)",
-                                                    border: "1px solid rgba(255,255,255,0.12)",
-                                                    borderRadius: "6px",
-                                                    padding: "0.2rem 0.45rem",
-                                                    fontSize: "0.7rem",
-                                                    color: "rgba(255,255,255,0.85)",
-                                                    whiteSpace: "nowrap",
-                                                    pointerEvents: "none",
-                                                    zIndex: 99999,
+            backgroundColor: colors.canvasSoft,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: `${rounded.sm}px`,
+            padding: "0.2rem 0.45rem",
+            fontSize: "0.7rem",
+            color: colors.ink,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            zIndex: 99999,
         }}>
         {flag} {country}
         </div>,
@@ -287,11 +295,11 @@ const ReactionBubble = ({ country, emoji, flag, code }) => {
         style={{
             width: "1.6rem", height: "1.6rem", borderRadius: "50%",
             backgroundColor: nationColor
-            ? `color-mix(in srgb, ${nationColor} 25%, rgba(20,28,48,0.98))`
-            : "rgba(30,40,60,0.95)",
+            ? `color-mix(in srgb, ${nationColor} 25%, ${colors.canvasSoft})`
+            : colors.canvasSoft,
             border: nationColor
             ? `1.5px solid ${nationColor}`
-            : "1px solid rgba(255,255,255,0.15)",
+            : `1px solid ${colors.hairline}`,
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "0.85rem", cursor: "default", lineHeight: 1,
         }}
@@ -306,8 +314,8 @@ const TypingBubble = ({ speaker, code }) => {
     const flag = useCountryFlag({ code, name: speaker });
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-        <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", marginBottom: "0.25rem" }}>{flag} {speaker}</span>
-        <div style={{ padding: "0.6rem 0.85rem", borderRadius: "12px 12px 12px 4px", backgroundColor: "rgba(255,255,255,0.08)", fontSize: "0.85rem" }}>
+        <span style={{ fontSize: "0.7rem", color: colors.mute, marginBottom: "0.25rem" }}>{flag} {speaker}</span>
+        <div style={{ padding: "0.6rem 0.85rem", borderRadius: `${rounded.md}px ${rounded.md}px ${rounded.md}px 2px`, backgroundColor: colors.canvasSoft, border: `1px solid ${colors.hairline}`, fontSize: "0.85rem", color: colors.body }}>
         <ThinkingDots />
         </div>
         </div>
@@ -332,30 +340,31 @@ const CountryTile = ({ country, code, flag, isSelected, onToggle }) => {
             gap: "0.35rem",
             height: "5.5rem",
             padding: "0 0.4rem",
-            borderRadius: "10px",
+            borderRadius: `${rounded.sm}px`,
             border: isSelected
-            ? "1px solid rgba(59,130,246,0.6)"
+            ? `1px solid ${colors.primary}`
             : hovered
-            ? "1px solid rgba(255,255,255,0.15)"
-            : "1px solid rgba(255,255,255,0.07)",
+            ? `1px solid ${colors.mute}`
+            : `1px solid ${colors.hairline}`,
             background: isSelected
-            ? "rgba(59,130,246,0.18)"
+            ? colors.primary
             : hovered
-            ? "rgba(255,255,255,0.07)"
-            : "rgba(255,255,255,0.04)",
+            ? colors.canvasSoft
+            : colors.canvas,
+            color: isSelected ? colors.onPrimary : colors.ink,
             cursor: "pointer",
             transition: "all 0.12s ease",
-            fontFamily: "sans-serif",
+            fontFamily: fonts.sans,
             position: "relative",
             width: "100%",
             boxSizing: "border-box",
         }}
         >
         {isSelected && (
-            <div style={{ position: "absolute", top: "0.3rem", right: "0.3rem", width: "14px", height: "14px", borderRadius: "50%", background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.55rem", color: "white", fontWeight: 700 }}>✓</div>
+            <div style={{ position: "absolute", top: "0.3rem", right: "0.3rem", width: "14px", height: "14px", borderRadius: "50%", background: colors.onPrimary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.55rem", color: colors.primary, fontWeight: 600 }}>✓</div>
         )}
         <span style={{ fontSize: "1.6rem", lineHeight: 1 }}>{flag}</span>
-        <span style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", textAlign: "center", lineHeight: 1.3 }}>{shortName}</span>
+        <span style={{ fontSize: "0.72rem", color: isSelected ? colors.onPrimary : colors.bodyStrong, textAlign: "center", lineHeight: 1.3 }}>{shortName}</span>
         </button>
     );
 };
@@ -370,45 +379,43 @@ const CountrySelectorModal = ({ countries, loading, onStart, onCancel }) => {
     const toggle = ({ name, code }) => setSelected(prev => prev.some(s => s.name === name) ? prev.filter(s => s.name !== name) : [...prev, { name, code }]);
 
     return (
-        <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(17,24,39,0.98)", borderRadius: "16px", display: "flex", flexDirection: "column", zIndex: 10 }}>
+        <div style={{ position: "absolute", inset: 0, backgroundColor: colors.canvasSoft, borderRadius: `${rounded.md}px`, display: "flex", flexDirection: "column", zIndex: 10 }}>
         <div style={{ padding: "1.1rem 1.25rem 0.6rem", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-        <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "white" }}>Start New Diplomatic Chat</div>
-        <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.4)", marginTop: "0.2rem" }}>Select countries to invite to the conversation</div>
+        <div style={{ fontWeight: 600, letterSpacing: "-0.01em", fontSize: "1.05rem", color: colors.ink }}>Start New Diplomatic Chat</div>
+        <div style={{ fontSize: "0.78rem", color: colors.mute, marginTop: "0.2rem" }}>Select countries to invite to the conversation</div>
         </div>
-        <button onClick={onCancel} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: "1.1rem", padding: "0.1rem 0.3rem", borderRadius: "6px", lineHeight: 1 }}
-        onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-        onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "none"; }}>✕</button>
+        <button onClick={onCancel} style={{ background: "none", border: "none", cursor: "pointer", color: colors.mute, fontSize: "1.1rem", padding: "0.1rem 0.3rem", borderRadius: `${rounded.sm}px`, lineHeight: 1 }}
+        onMouseEnter={e => { e.currentTarget.style.color = colors.primary; e.currentTarget.style.background = colors.canvas; }}
+        onMouseLeave={e => { e.currentTarget.style.color = colors.mute; e.currentTarget.style.background = "none"; }}>✕</button>
         </div>
-        <div style={{ marginTop: "0.85rem", padding: "0.65rem 0.9rem", borderRadius: "10px", backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>Selected Countries ({selected.length}):</div>
-        <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", marginTop: "0.2rem" }}>
+        <div style={{ marginTop: "0.85rem", padding: "0.65rem 0.9rem", borderRadius: `${rounded.sm}px`, backgroundColor: colors.canvas, border: `1px solid ${colors.hairline}` }}>
+        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: colors.bodyStrong }}>Selected Countries ({selected.length}):</div>
+        <div style={{ fontSize: "0.78rem", color: colors.mute, marginTop: "0.2rem" }}>
         {selected.length === 0 ? "No countries selected yet" : selected.map(c => `${selectedFlags[c.name] ?? "🏳"} ${c.name}`).join(", ")}
         </div>
         </div>
         <div style={{ position: "relative", display: "flex", alignItems: "center", marginTop: "0.75rem" }}>
-        <span style={{ position: "absolute", left: "0.75rem", color: "rgba(255,255,255,0.35)", display: "flex", pointerEvents: "none" }}><SearchIcon /></span>
+        <span style={{ position: "absolute", left: "0.75rem", color: colors.mute, display: "flex", pointerEvents: "none" }}><SearchIcon /></span>
         <input type="text" placeholder="Search countries..." value={search} onChange={e => setSearch(e.target.value)}
-        style={{ width: "100%", padding: "0.55rem 0.85rem 0.55rem 2.2rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "white", fontSize: "0.82rem", outline: "none", boxSizing: "border-box", fontFamily: "sans-serif" }}
-        onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.5)"}
-        onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.12)"} />
+        style={{ width: "100%", padding: "0.55rem 0.85rem 0.55rem 2.2rem", borderRadius: `${rounded.sm}px`, border: `1px solid ${colors.hairline}`, background: colors.canvas, color: colors.ink, fontSize: "0.82rem", outline: "none", boxSizing: "border-box", fontFamily: fonts.sans }}
+        onFocus={e => e.target.style.borderColor = colors.primary}
+        onBlur={e => e.target.style.borderColor = colors.hairline} />
         </div>
         </div>
         <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none", padding: "0.5rem 1rem", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridAutoRows: "5.5rem", gap: "0.5rem", alignContent: "start" }}>
-        {loading && <p style={{ gridColumn: "1/-1", color: "rgba(255,255,255,0.35)", fontSize: "0.82rem", fontStyle: "italic", textAlign: "center" }}>Loading countries…</p>}
+        {loading && <p style={{ gridColumn: "1/-1", color: colors.mute, fontSize: "0.82rem", fontStyle: "italic", textAlign: "center" }}>Loading countries…</p>}
         {filtered.map(c => (
             <CountryTile key={c.name} country={c.name} code={c.code} flag={filteredFlags[c.name] ?? "🏳"} isSelected={isSelectedName(c.name)} onToggle={() => toggle(c)} />
         ))}
         </div>
-        <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: "0.5rem", flexShrink: 0 }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: "0.65rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.8)", fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", fontFamily: "sans-serif" }}
-        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-        onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}>Cancel</button>
+        <div style={{ padding: "0.75rem 1rem", borderTop: `1px solid ${colors.hairline}`, display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: "0.65rem", borderRadius: `${rounded.sm}px`, border: `1px solid ${colors.hairline}`, background: colors.canvas, color: colors.body, fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", fontFamily: fonts.sans }}
+        onMouseEnter={e => e.currentTarget.style.background = colors.canvasSoft}
+        onMouseLeave={e => e.currentTarget.style.background = colors.canvas}>Cancel</button>
         <button onClick={() => selected.length > 0 && onStart(selected)} disabled={selected.length === 0}
-        style={{ flex: 2, padding: "0.65rem", borderRadius: "10px", border: "none", background: selected.length > 0 ? "#3b82f6" : "rgba(59,130,246,0.3)", color: "white", fontSize: "0.85rem", fontWeight: 600, cursor: selected.length > 0 ? "pointer" : "not-allowed", fontFamily: "sans-serif" }}
-        onMouseEnter={e => { if (selected.length > 0) e.currentTarget.style.background = "#2563eb"; }}
-        onMouseLeave={e => { if (selected.length > 0) e.currentTarget.style.background = "#3b82f6"; }}>
+        style={{ flex: 2, padding: "0.65rem", borderRadius: `${rounded.sm}px`, border: "none", background: selected.length > 0 ? colors.primary : colors.canvas, color: selected.length > 0 ? colors.onPrimary : colors.mute, fontSize: "0.85rem", fontWeight: 600, cursor: selected.length > 0 ? "pointer" : "not-allowed", fontFamily: fonts.sans, opacity: selected.length > 0 ? 1 : 0.6 }}>
         Chat with {selected.length} {selected.length === 1 ? "country" : "countries"}
         </button>
         </div>
@@ -593,13 +600,13 @@ const ConversationView = ({ chat, playerCountry, gameDate, onDelete, onBack, onM
 
         return (
             <>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.85rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
-            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", display: "flex", padding: "0.2rem", borderRadius: "6px" }}
-            onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; e.currentTarget.style.background = "none"; }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.85rem 1rem", borderBottom: `1px solid ${colors.hairline}`, flexShrink: 0 }}>
+            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: colors.mute, display: "flex", padding: "0.2rem", borderRadius: `${rounded.sm}px` }}
+            onMouseEnter={e => { e.currentTarget.style.color = colors.ink; e.currentTarget.style.background = colors.canvas; }}
+            onMouseLeave={e => { e.currentTarget.style.color = colors.mute; e.currentTarget.style.background = "none"; }}>
             <BackIcon />
             </button>
-            <span style={{ flex: 1, fontWeight: 700, fontSize: "0.95rem", color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ flex: 1, fontWeight: 600, letterSpacing: "-0.01em", fontSize: "0.95rem", color: colors.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             Chat with {countries.map(c => c.name).join(", ") || "unknown participant"}
             </span>
             {/* Two-step, same as the list row: one click arms, the next confirms. */}
@@ -607,19 +614,19 @@ const ConversationView = ({ chat, playerCountry, gameDate, onDelete, onBack, onM
             aria-label={confirmingDelete ? "Confirm deleting this chat" : "Delete chat"}
             onClick={() => { if (confirmingDelete) { onDelete?.(); } else { setConfirmingDelete(true); } }}
             onBlur={() => setConfirmingDelete(false)}
-            style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: confirmingDelete ? "rgba(239,68,68,0.18)" : "none", border: `1px solid ${confirmingDelete ? "rgba(239,68,68,0.55)" : "transparent"}`, cursor: "pointer", color: confirmingDelete ? "#fca5a5" : "rgba(239,68,68,0.65)", fontSize: "0.72rem", fontWeight: 600, fontFamily: "sans-serif", padding: confirmingDelete ? "0.25rem 0.5rem" : "0.25rem", borderRadius: "6px", lineHeight: 1 }}
+            style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: confirmingDelete ? "rgba(239,68,68,0.18)" : "none", border: `1px solid ${confirmingDelete ? "rgba(239,68,68,0.55)" : "transparent"}`, cursor: "pointer", color: confirmingDelete ? "#fca5a5" : "rgba(239,68,68,0.65)", fontSize: "0.72rem", fontWeight: 600, fontFamily: fonts.sans, padding: confirmingDelete ? "0.25rem 0.5rem" : "0.25rem", borderRadius: `${rounded.sm}px`, lineHeight: 1 }}
             onMouseEnter={e => { if (!confirmingDelete) { e.currentTarget.style.color = "rgba(239,68,68,1)"; e.currentTarget.style.background = "rgba(239,68,68,0.1)"; } }}
             onMouseLeave={e => { if (!confirmingDelete) { e.currentTarget.style.color = "rgba(239,68,68,0.65)"; e.currentTarget.style.background = "none"; } }}>
             {confirmingDelete ? "Delete?" : <TrashIcon />}
             </button>
-            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.45)", fontSize: "1rem", lineHeight: 1, padding: "0.25rem 0.3rem", borderRadius: "6px" }}
-            onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.45)"; e.currentTarget.style.background = "none"; }}>✕</button>
+            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: colors.mute, fontSize: "1rem", lineHeight: 1, padding: "0.25rem 0.3rem", borderRadius: `${rounded.sm}px` }}
+            onMouseEnter={e => { e.currentTarget.style.color = colors.ink; e.currentTarget.style.background = colors.canvas; }}
+            onMouseLeave={e => { e.currentTarget.style.color = colors.mute; e.currentTarget.style.background = "none"; }}>✕</button>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", overflowX: "visible", scrollbarWidth: "none", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
             {messages.length === 0 && !isLoading && (
-                <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.35)", fontStyle: "italic", textAlign: "center", marginTop: "2rem" }}>
+                <p style={{ fontSize: "0.85rem", color: colors.mute, fontStyle: "italic", textAlign: "center", marginTop: "2rem" }}>
                 Begin the diplomatic conversation.
                 </p>
             )}
@@ -629,41 +636,40 @@ const ConversationView = ({ chat, playerCountry, gameDate, onDelete, onBack, onM
             </div>
 
             {phase === "pending" && !isLoading && pendingCountry ? (
-                <div style={{ padding: "0.75rem 1rem 0.9rem", borderTop: "1px solid rgba(255,255,255,0.07)", backgroundColor: "rgba(0,0,0,0.15)", flexShrink: 0 }}>
-                <p style={{ margin: "0 0 0.55rem 0", fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", textAlign: "center" }}>
+                <div style={{ padding: "0.75rem 1rem 0.9rem", borderTop: `1px solid ${colors.hairline}`, backgroundColor: colors.canvas, flexShrink: 0 }}>
+                <p style={{ margin: "0 0 0.55rem 0", fontSize: "0.78rem", color: colors.mute, textAlign: "center" }}>
                 <CountryTurnLabel country={pendingCountry} remaining={remainingQueue.length} />
                 </p>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button
                 onClick={handleSpeakInstead}
-                style={{ flex: 1, padding: "0.58rem 0.7rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.8)", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.12s ease" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.11)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+                style={{ flex: 1, padding: "0.58rem 0.7rem", borderRadius: `${rounded.sm}px`, border: `1px solid ${colors.hairline}`, background: colors.canvas, color: colors.body, fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", fontFamily: fonts.sans, transition: "all 0.12s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.background = colors.canvasSoft; e.currentTarget.style.borderColor = colors.mute; }}
+                onMouseLeave={e => { e.currentTarget.style.background = colors.canvas; e.currentTarget.style.borderColor = colors.hairline; }}
                 >Speak</button>
+                {/* Primary next step: the polarity flip (off-white fill + dark
+                    text) replaces the legacy purple accent. */}
                 <button
                 onClick={handleLetSpeak}
-                style={{ flex: 2, padding: "0.58rem 0.7rem", borderRadius: "10px", border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.12)", color: "rgba(255,255,255,0.88)", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", fontFamily: "sans-serif", transition: "all 0.12s ease" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(139,92,246,0.24)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.55)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(139,92,246,0.12)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.3)"; }}
+                style={{ flex: 2, padding: "0.58rem 0.7rem", borderRadius: `${rounded.sm}px`, border: `1px solid ${colors.primary}`, background: colors.primary, color: colors.onPrimary, fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", fontFamily: fonts.sans, transition: "all 0.12s ease" }}
                 >Let {pendingCountry.name} speak →</button>
                 </div>
                 </div>
             ) : phase === "player" && !isLoading ? (
-                <div style={{ padding: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                <div style={{ padding: "1rem", borderTop: `1px solid ${colors.hairline}`, display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
                 <textarea
                 placeholder="Send a diplomatic message…"
                 rows={1} value={playerInput}
                 onChange={e => setPlayerInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePlayerSubmit(); } }}
                 onInput={e => { e.target.style.height = "auto"; }}
-                style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "10px", color: "white", fontSize: "0.875rem", padding: "0.6rem 0.75rem", resize: "none", outline: "none", fontFamily: "sans-serif", lineHeight: "1.5", overflowY: "hidden", transition: "border-color 0.2s" }}
-                onFocus={e => e.target.style.borderColor = "rgba(59,130,246,0.6)"}
-                onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.15)"}
+                style={{ flex: 1, backgroundColor: colors.canvas, border: `1px solid ${colors.hairline}`, borderRadius: `${rounded.sm}px`, color: colors.ink, fontSize: "0.875rem", padding: "0.6rem 0.75rem", resize: "none", outline: "none", fontFamily: fonts.sans, lineHeight: "1.5", overflowY: "hidden", transition: "border-color 0.2s" }}
+                onFocus={e => e.target.style.borderColor = colors.primary}
+                onBlur={e => e.target.style.borderColor = colors.hairline}
                 />
+                {/* Send: the polarity flip replaces the legacy blue #3b82f6 CTA. */}
                 <button onClick={handlePlayerSubmit} disabled={!playerInput.trim()}
-                style={{ backgroundColor: playerInput.trim() ? "#3b82f6" : "rgba(59,130,246,0.3)", border: "none", borderRadius: "10px", width: "2.5rem", height: "2.5rem", display: "flex", alignItems: "center", justifyContent: "center", cursor: playerInput.trim() ? "pointer" : "not-allowed", flexShrink: 0, fontSize: "1rem", transition: "background-color 0.2s" }}
-                onMouseEnter={e => { if (playerInput.trim()) e.currentTarget.style.backgroundColor = "#2563eb"; }}
-                onMouseLeave={e => { if (playerInput.trim()) e.currentTarget.style.backgroundColor = "#3b82f6"; }}
+                style={{ backgroundColor: playerInput.trim() ? colors.primary : colors.canvas, color: playerInput.trim() ? colors.onPrimary : colors.mute, border: `1px solid ${playerInput.trim() ? colors.primary : colors.hairline}`, borderRadius: `${rounded.sm}px`, width: "2.5rem", height: "2.5rem", display: "flex", alignItems: "center", justifyContent: "center", cursor: playerInput.trim() ? "pointer" : "not-allowed", flexShrink: 0, fontSize: "1rem", transition: "background-color 0.2s" }}
                 >🚀</button>
                 </div>
             ) : null}
@@ -675,8 +681,8 @@ const CountryTurnLabel = ({ country, remaining }) => {
     const flag = useCountryFlag({ code: country.code, name: country.name });
     return (
         <>
-        {flag} <strong style={{ color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>{country.name}</strong> would like to respond
-        {remaining > 0 && <span style={{ color: "rgba(255,255,255,0.22)" }}> · {remaining} more after</span>}
+        {flag} <strong style={{ color: colors.bodyStrong, fontWeight: 600 }}>{country.name}</strong> would like to respond
+        {remaining > 0 && <span style={{ color: colors.mute }}> · {remaining} more after</span>}
         </>
     );
 };
@@ -735,22 +741,22 @@ const ChatListItem = ({ chat, onClick, onDelete, unread = false }) => {
 
     return (
         <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setConfirming(false); }} style={{ position: "relative" }}>
-        <button onClick={onClick} style={{ width: "100%", padding: "0.7rem 0.9rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.07)", background: hovered ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", transition: "background 0.15s", fontFamily: "sans-serif", textAlign: "left" }}>
+        <button onClick={onClick} style={{ width: "100%", padding: "0.7rem 0.9rem", borderRadius: `${rounded.sm}px`, border: `1px solid ${colors.hairline}`, background: hovered ? colors.canvasSoft : colors.canvas, display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", transition: "background 0.15s", fontFamily: fonts.sans, textAlign: "left" }}>
         {/* Fixed-width slot, always rendered, so read and unread rows stay aligned. */}
         <div style={{ width: "0.5rem", flexShrink: 0, display: "flex", justifyContent: "center" }} aria-hidden="true">
-        {unread && <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#60a5fa" }} />}
+        {unread && <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#dc2626" }} />}
         </div>
         <div style={{ fontSize: "1.3rem", flexShrink: 0, lineHeight: 1 }}>{flags}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: "0.82rem", fontWeight: unread ? 700 : 600, color: unread ? "#fff" : "rgba(255,255,255,0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{names}{unread && <span style={{ fontWeight: 400, fontSize: "0.7rem", color: "#60a5fa", marginLeft: "0.4rem" }}>new</span>}</div>
-        <div style={{ fontSize: "0.75rem", color: unread ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.35)", marginTop: "0.15rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{preview}</div>
+        <div style={{ fontSize: "0.82rem", fontWeight: unread ? 600 : 500, color: unread ? colors.ink : colors.bodyStrong, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{names}{unread && <span style={{ fontWeight: 400, fontSize: "0.7rem", color: "#dc2626", marginLeft: "0.4rem" }}>new</span>}</div>
+        <div style={{ fontSize: "0.75rem", color: unread ? colors.body : colors.mute, marginTop: "0.15rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{preview}</div>
         </div>
         </button>
         {hovered && (
             <button onClick={e => { e.stopPropagation(); if (confirming) { onDelete(); } else { setConfirming(true); } }}
             title={confirming ? "Click again to delete this chat" : "Delete chat"}
             aria-label={confirming ? "Confirm deleting this chat" : "Delete chat"}
-            style={{ position: "absolute", top: "50%", right: "0.6rem", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: "0.3rem", background: confirming ? "rgba(239,68,68,0.18)" : "none", border: `1px solid ${confirming ? "rgba(239,68,68,0.55)" : "transparent"}`, cursor: "pointer", color: confirming ? "#fca5a5" : "rgba(239,68,68,0.7)", fontSize: "0.72rem", fontWeight: 600, fontFamily: "sans-serif", padding: confirming ? "0.25rem 0.5rem" : "0.25rem", borderRadius: "6px", lineHeight: 1 }}
+            style={{ position: "absolute", top: "50%", right: "0.6rem", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: "0.3rem", background: confirming ? "rgba(239,68,68,0.18)" : "none", border: `1px solid ${confirming ? "rgba(239,68,68,0.55)" : "transparent"}`, cursor: "pointer", color: confirming ? "#fca5a5" : "rgba(239,68,68,0.7)", fontSize: "0.72rem", fontWeight: 600, fontFamily: fonts.sans, padding: confirming ? "0.25rem 0.5rem" : "0.25rem", borderRadius: `${rounded.sm}px`, lineHeight: 1 }}
             onMouseEnter={e => { if (!confirming) { e.currentTarget.style.color = "rgba(239,68,68,1)"; e.currentTarget.style.background = "rgba(239,68,68,0.1)"; } }}
             onMouseLeave={e => { if (!confirming) { e.currentTarget.style.color = "rgba(239,68,68,0.7)"; e.currentTarget.style.background = "none"; } }}>
             {confirming ? "Delete?" : <TrashIcon />}</button>
@@ -958,23 +964,21 @@ const ChatPanel = ({ isOpen, onClose, requestedCountry, onConsumeRequest }) => {
                 <ConversationView chat={activeChat} playerCountry={playerCountry} gameDate={gameDate} onDelete={() => handleDeleteChat(activeChat.id)} onBack={() => setActiveChat(null)} onMessagesUpdate={handleMessagesUpdate} />
             ) : (
                 <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem 0.75rem", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
-                <span style={{ fontWeight: 700, fontSize: "1rem" }}>Diplomatic Chats</span>
-                <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: "1.1rem", lineHeight: 1, padding: "0.15rem 0.3rem", borderRadius: "6px" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "none"; }}>✕</button>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem 0.75rem", borderBottom: `1px solid ${colors.hairline}`, flexShrink: 0 }}>
+                <span style={{ fontWeight: 600, letterSpacing: "-0.01em", fontSize: "1rem", color: colors.ink }}>Diplomatic Chats</span>
+                <button onClick={onClose} style={{ background: "none", border: "none", color: colors.mute, cursor: "pointer", fontSize: "1.1rem", lineHeight: 1, padding: "0.15rem 0.3rem", borderRadius: `${rounded.sm}px` }}
+                onMouseEnter={e => { e.currentTarget.style.color = colors.ink; e.currentTarget.style.background = colors.canvas; }}
+                onMouseLeave={e => { e.currentTarget.style.color = colors.mute; e.currentTarget.style.background = "none"; }}>✕</button>
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none", padding: "0.75rem 1rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
                 {openChats.length === 0 ? (
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.25)", fontSize: "0.82rem", fontStyle: "italic", textAlign: "center", padding: "2rem" }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: colors.mute, fontSize: "0.82rem", fontStyle: "italic", textAlign: "center", padding: "2rem" }}>
                     No diplomatic conversations yet.<br />Start one below.
                     </div>
                 ) : orderedChats.map(chat => <ChatListItem key={chat.id} chat={chat} unread={unreadIds.has(String(chat.id))} onClick={() => openChatFromList(chat)} onDelete={() => handleDeleteChat(chat.id)} />)}
                 </div>
-                <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
-                <button onClick={() => setShowSelector(true)} style={{ width: "100%", padding: "0.7rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.85)", fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", fontFamily: "sans-serif" }}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-                onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.07)"}>Start New Chat</button>
+                <div style={{ padding: "0.75rem 1rem", borderTop: `1px solid ${colors.hairline}`, flexShrink: 0 }}>
+                <button onClick={() => setShowSelector(true)} style={{ width: "100%", padding: "0.7rem", borderRadius: `${rounded.sm}px`, border: `1px solid ${colors.primary}`, background: colors.primary, color: colors.onPrimary, fontSize: "0.85rem", fontWeight: 600, cursor: "pointer", fontFamily: fonts.sans }}>Start New Chat</button>
                 </div>
                 </>
             )}
@@ -985,7 +989,7 @@ const ChatPanel = ({ isOpen, onClose, requestedCountry, onConsumeRequest }) => {
             <>
             <MarkdownStyleInjector />
             {isMobile ? (
-                <div style={{ position: "fixed", bottom: isOpen ? "4.25rem" : "-40rem", left: "0rem", width: "26.25rem", maxWidth: "calc(100vw - 1rem)", height: "min(calc(100vh - 9rem), max(calc(100vh - 33rem), 30rem))", minHeight: "10rem", backgroundColor: "rgba(17,24,39,0.95)", backdropFilter: "blur(8px)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "-4px 0 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06)", zIndex: 9998, overflow: "hidden", transition: "bottom 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease", opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none", fontFamily: "sans-serif", color: "white", display: "flex", flexDirection: "column" }}>
+                <div style={{ position: "fixed", bottom: isOpen ? "4.25rem" : "-40rem", left: "0rem", width: "26.25rem", maxWidth: "calc(100vw - 1rem)", height: "min(calc(100vh - 9rem), max(calc(100vh - 33rem), 30rem))", minHeight: "10rem", backgroundColor: colors.canvasSoft, borderRadius: rounded.lg, border: `1px solid ${colors.hairline}`, zIndex: 9998, overflow: "hidden", transition: "bottom 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease", opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none", fontFamily: fonts.sans, color: colors.ink, display: "flex", flexDirection: "column" }}>
                 {panelBody}
                 </div>
             ) : (
@@ -1067,13 +1071,13 @@ const Chat = ({ hovered, setHovered, isOpen, onToggle }) => {
         return (
             <>
             {hasOpened && <ChatPanel isOpen={isOpen} onClose={onToggle} requestedCountry={pendingCountry} onConsumeRequest={() => setPendingCountry(null)} />}
-            <button title="Chat" style={{ width: "3.3rem", height: "3.3rem", borderRadius: "10px", border: hovered ? "1px solid rgba(255,255,255,0.2)" : isOpen ? "1px solid rgba(139,92,246,0.5)" : "1px solid rgba(255,255,255,0.1)", background: isOpen ? "linear-gradient(145deg,rgba(109,40,217,0.4),rgba(76,29,149,0.4))" : hovered ? "linear-gradient(145deg,rgba(40,55,80,0.95),rgba(20,30,50,0.95))" : "linear-gradient(145deg,rgba(30,42,65,0.95),rgba(15,22,40,0.95))", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.12s ease", boxShadow: hovered ? "inset 0 1px 0 rgba(255,255,255,0.1),0 2px 8px rgba(0,0,0,0.4)" : "inset 0 1px 0 rgba(255,255,255,0.06),inset 0 -1px 0 rgba(0,0,0,0.3),0 2px 6px rgba(0,0,0,0.35)", fontSize: "1.2rem", outline: "none", transform: hovered ? "translateY(-1px)" : "translateY(0)", color: "white", fontFamily: "sans-serif", flexShrink: 0 }}
+            <button title="Chat" style={{ width: "3.3rem", height: "3.3rem", borderRadius: rounded.md, border: `1px solid ${isOpen ? colors.primary : hovered ? colors.mute : colors.hairline}`, background: isOpen ? colors.primary : colors.canvas, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.12s ease", fontSize: "1.2rem", outline: "none", color: isOpen ? colors.onPrimary : colors.ink, fontFamily: fonts.sans, flexShrink: 0 }}
             onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
             onClick={() => setChatOpen(o => !o)}>
             <span style={{ position: "relative", display: "inline-flex" }}>
                 💬
                 {unseenCount > 0 && !isOpen && (
-                    <span style={{ position: "absolute", top: "-0.55rem", right: "-0.8rem", minWidth: "1.05rem", height: "1.05rem", padding: "0 0.2rem", borderRadius: "999px", background: "#dc2626", border: "1px solid rgba(255,255,255,0.35)", color: "white", fontSize: "0.62rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, boxShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+                    <span style={{ position: "absolute", top: "-0.55rem", right: "-0.8rem", minWidth: "1.05rem", height: "1.05rem", padding: "0 0.2rem", borderRadius: rounded.pill, background: "#dc2626", border: `1px solid ${colors.hairline}`, color: "#fff", fontSize: "0.62rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
                         {unseenCount > 9 ? "9+" : unseenCount}
                     </span>
                 )}
@@ -1089,7 +1093,7 @@ const Toolbar = memo(({ onOpenAdvisor, activePanel, onTogglePanel }) => {
     const [hoveredChat, setHoveredChat]       = useState(false);
     const [hoveredActions, setHoveredActions] = useState(false);
     return (
-        <div style={{ position: "fixed", bottom: "0.5rem", left: "0.5rem", height: "4rem", width: "8.75rem", gap: "0.75rem", padding: "0 0.1rem", backgroundColor: "rgba(17,24,39,0.9)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontFamily: "sans-serif", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 24px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05)" }}>
+        <div style={{ position: "fixed", bottom: "0.5rem", left: "0.5rem", height: "4rem", width: "8.75rem", gap: "0.75rem", padding: "0 0.1rem", backgroundColor: colors.canvasSoft, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", color: colors.ink, fontFamily: fonts.sans, borderRadius: rounded.lg, border: `1px solid ${colors.hairline}` }}>
         <Chat hovered={hoveredChat} setHovered={setHoveredChat} isOpen={activePanel === "chat"} onToggle={() => onTogglePanel("chat")} />
         <Actions onOpenAdvisor={onOpenAdvisor} hovered={hoveredActions} setHovered={setHoveredActions} isOpen={activePanel === "actions"} onToggle={() => onTogglePanel("actions")} />
         </div>

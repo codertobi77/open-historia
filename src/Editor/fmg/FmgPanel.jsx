@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { panelSurface, inputStyle } from "../editorStyles.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 // FMG's heightmap templates (drive its landmass shape). Kept in sync with the
 // driver's template mapping; "random" lets FMG pick.
@@ -22,7 +23,7 @@ const SIZES = [
 ];
 
 const field = { display: "flex", flexDirection: "column", gap: 3, fontSize: 12 };
-const label = { color: "rgba(255,255,255,0.6)", fontSize: 11, letterSpacing: "0.02em" };
+const label = { color: colors.mute, fontSize: 11, letterSpacing: "0.02em" };
 
 const FmgPanel = ({ open, onToggle, busy, log = [], onGenerate }) => {
   const [seed, setSeed] = useState("");
@@ -62,16 +63,17 @@ const FmgPanel = ({ open, onToggle, busy, log = [], onGenerate }) => {
           zIndex: 36,
           writingMode: "vertical-rl",
           padding: "14px 7px",
-          border: "1px solid rgba(147,197,253,0.4)",
-          borderRight: open ? "1px solid rgba(147,197,253,0.4)" : "none",
-          borderRadius: open ? "10px 0 0 10px" : "10px 0 0 10px",
+          border: `1px solid ${colors.hairline}`,
+          borderRight: open ? `1px solid ${colors.hairline}` : "none",
+          borderRadius: `${rounded.md}px 0 0 ${rounded.md}px`,
           cursor: "pointer",
-          color: "white",
-          fontWeight: 700,
+          // Primary CTA: off-white fill + dark text (the polarity flip).
+          color: colors.onPrimary,
+          fontWeight: 600,
           fontSize: 12,
           letterSpacing: "0.06em",
           transition: "right 160ms ease",
-          background: "rgba(59,130,246,0.85)",
+          background: colors.primary,
         }}
       >
         🗺 GENERATE {open ? "▸" : "◂"}
@@ -88,7 +90,7 @@ const FmgPanel = ({ open, onToggle, busy, log = [], onGenerate }) => {
             width: 340,
             zIndex: 35,
             borderRadius: 0,
-            borderLeft: "1px solid rgba(147,197,253,0.35)",
+            borderLeft: `1px solid ${colors.hairline}`,
             display: "flex",
             flexDirection: "column",
             padding: "16px 16px 12px",
@@ -96,7 +98,7 @@ const FmgPanel = ({ open, onToggle, busy, log = [], onGenerate }) => {
             overflowY: "auto",
           }}
         >
-          <div style={{ fontSize: 15, fontWeight: 800 }}>Generate a world</div>
+          <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.2px" }}>Generate a world</div>
           <div style={{ ...label, marginTop: -6 }}>
             Azgaar's Fantasy Map Generator builds the land, countries and cities; they
             import straight into your map as vector regions + a biome basemap.
@@ -151,28 +153,29 @@ const FmgPanel = ({ open, onToggle, busy, log = [], onGenerate }) => {
               marginTop: 2,
               padding: "10px 14px",
               cursor: busy ? "default" : "pointer",
-              color: "white",
-              fontWeight: 800,
+              color: colors.onPrimary,
+              fontWeight: 600,
               fontSize: 14,
-              border: "1px solid rgba(147,197,253,0.5)",
-              background: busy ? "rgba(59,130,246,0.35)" : "rgba(59,130,246,0.85)",
-              opacity: busy ? 0.85 : 1,
+              border: `1px solid ${colors.primary}`,
+              background: colors.primary,
+              opacity: busy ? 0.6 : 1,
             }}
           >
             {busy ? "Generating…" : "⚙ Generate & import"}
           </button>
 
-          {/* console log */}
+          {/* console log — terminal content takes DM Mono per DESIGN.md; the
+              green readout is a functional terminal color, not brand chrome. */}
           <div
             style={{
               flex: 1,
               minHeight: 120,
               marginTop: 4,
               padding: "8px 10px",
-              borderRadius: 8,
-              background: "rgba(0,0,0,0.35)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              fontFamily: "ui-monospace, Menlo, Consolas, monospace",
+              borderRadius: rounded.md,
+              background: colors.canvas,
+              border: `1px solid ${colors.hairline}`,
+              fontFamily: fonts.mono,
               fontSize: 11,
               lineHeight: 1.55,
               color: "rgba(180,230,190,0.92)",
@@ -180,7 +183,7 @@ const FmgPanel = ({ open, onToggle, busy, log = [], onGenerate }) => {
               whiteSpace: "pre-wrap",
             }}
           >
-            {log.length ? log.map((line, i) => <div key={i}>{line}</div>) : <span style={{ color: "rgba(255,255,255,0.3)" }}>Console output appears here…</span>}
+            {log.length ? log.map((line, i) => <div key={i}>{line}</div>) : <span style={{ color: colors.mute }}>Console output appears here…</span>}
           </div>
         </div>
       )}

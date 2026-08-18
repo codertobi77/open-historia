@@ -1,6 +1,7 @@
 /*! Open Historia — portions (mobile search layout) © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
 import React, { memo, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 const SEARCH_HEADERS = { "Accept-Language": "en, *;q=0.5" };
 const SEARCH_RESULT_CACHE = new Map();
@@ -337,13 +338,12 @@ const Search = memo(({ mapRef }) => {
         display: "flex",
         alignItems: "center",
         zIndex: 9999,
-        borderRadius: hasSuggestions ? "0 0 12px 12px" : "12px",
-        backgroundColor: "rgba(17, 24, 39, 0.9)",
-        backdropFilter: "blur(4px)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
-        color: "white",
-        fontFamily: "sans-serif",
+        // Design-system chrome: warm canvas-soft + hairline, no blur/shadow.
+        borderRadius: hasSuggestions ? `0 0 ${rounded.md}px ${rounded.md}px` : rounded.md,
+        backgroundColor: colors.canvasSoft,
+        border: `1px solid ${colors.hairline}`,
+        color: colors.primary,
+        fontFamily: fonts.sans,
       }}
       onClick={!expanded ? () => setExpanded(true) : undefined}
     >
@@ -384,7 +384,7 @@ const Search = memo(({ mapRef }) => {
             justifyContent: "center",
             flexShrink: 0,
             padding: 0,
-            color: status === "error" ? "#f87171" : "rgba(255,255,255,0.8)",
+            color: status === "error" ? "#f87171" : colors.body,
             transition: "color 0.2s",
           }}
           title={expanded ? "Close" : "Search place"}
@@ -429,13 +429,13 @@ const Search = memo(({ mapRef }) => {
             background: "none",
             border: "none",
             outline: "none",
-            color: status === "error" ? "#f87171" : "white",
+            color: status === "error" ? "#f87171" : colors.primary,
             fontSize: "0.85rem",
             width: "100%",
             opacity: expanded ? 1 : 0,
             pointerEvents: expanded ? "auto" : "none",
             transition: "opacity 0.2s 0.15s",
-            fontFamily: "sans-serif",
+            fontFamily: fonts.sans,
           }}
         />
 
@@ -448,7 +448,7 @@ const Search = memo(({ mapRef }) => {
               cursor: "pointer",
               padding: "0 0.6rem",
               height: "3rem",
-              color: query.trim() ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.2)",
+              color: query.trim() ? colors.body : colors.mute,
               display: "flex",
               alignItems: "center",
               flexShrink: 0,
@@ -471,12 +471,12 @@ const Search = memo(({ mapRef }) => {
             bottom: "calc(3rem - 1px)",
             left: "-1px",
             right: "-1px",
-            backgroundColor: "rgba(17, 24, 39, 0.97)",
-            backdropFilter: "blur(4px)",
-            borderRadius: "12px 12px 0 0",
-            border: "1px solid rgba(255,255,255,0.1)",
+            // Same chrome as the bar itself; opens upward, so the shared
+            // bottom edge is dropped to visually merge with the input row.
+            backgroundColor: colors.canvasSoft,
+            borderRadius: `${rounded.md}px ${rounded.md}px 0 0`,
+            border: `1px solid ${colors.hairline}`,
             borderBottom: "none",
-            boxShadow: "0 -6px 16px rgba(0,0,0,0.3)",
             overflow: "hidden",
           }}
         >
@@ -498,10 +498,10 @@ const Search = memo(({ mapRef }) => {
                   alignItems: "center",
                   gap: "0.55rem",
                   backgroundColor:
-                    index === selectedIndex ? "rgba(255,255,255,0.08)" : "transparent",
+                    index === selectedIndex ? colors.canvas : "transparent",
                   borderBottom:
                     index < suggestions.length - 1
-                      ? "1px solid rgba(255,255,255,0.05)"
+                      ? `1px solid ${colors.hairline}`
                       : "none",
                   transition: "background-color 0.1s",
                 }}
@@ -514,7 +514,7 @@ const Search = memo(({ mapRef }) => {
                   <div
                     style={{
                       fontSize: "0.82rem",
-                      color: "rgba(255,255,255,0.9)",
+                      color: colors.bodyStrong,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -527,7 +527,7 @@ const Search = memo(({ mapRef }) => {
                     <div
                       style={{
                         fontSize: "0.72rem",
-                        color: "rgba(255,255,255,0.4)",
+                        color: colors.mute,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",

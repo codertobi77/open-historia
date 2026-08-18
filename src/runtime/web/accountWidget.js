@@ -6,21 +6,24 @@
 import { accountConfigured, isSignedIn, getEmail, signOut, signInWithGoogle, googleClientId } from "./account.js";
 import { syncNow, startSync, stopSync } from "./sync.js";
 
+// Chrome follows the design tokens (src/design/tokens.js): warm canvas-soft
+// surfaces, 1px hairlines, tight radii, no blur/shadow. Sync-status dot colors
+// stay functional (green/amber/red).
 const css = `
-.oh-acct{position:fixed;top:4.25rem;right:10px;z-index:9997;font:13px/1.4 system-ui,sans-serif}
-.oh-acct-btn{display:flex;align-items:center;gap:6px;background:rgba(15,17,23,.82);color:#e6e8ee;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;cursor:pointer;backdrop-filter:blur(6px);max-width:220px}
-.oh-acct-btn:hover{border-color:rgba(255,255,255,.3)}
+.oh-acct{position:fixed;top:4.25rem;right:10px;z-index:9997;font:13px/1.4 Inter,system-ui,sans-serif}
+.oh-acct-btn{display:flex;align-items:center;gap:6px;background:#383330;color:#f7f5f0;border:1px solid #3f3a36;border-radius:999px;padding:5px 11px;cursor:pointer;max-width:220px}
+.oh-acct-btn:hover{border-color:#f7f5f0}
 .oh-acct-dot{width:8px;height:8px;border-radius:50%;background:#6b7280;flex:0 0 auto}
 .oh-acct-dot.ok{background:#3ddc84}.oh-acct-dot.syncing{background:#f0b429}.oh-acct-dot.error{background:#f0506e}
 .oh-acct-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.oh-acct-panel{position:absolute;top:38px;right:0;width:270px;background:#171a22;border:1px solid #262b36;border-radius:12px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
-.oh-acct-panel h4{margin:0 0 4px;font-size:14px;color:#e6e8ee}
-.oh-acct-panel p{margin:0 0 10px;color:#9aa2b1;font-size:12px}
-.oh-acct-panel input{width:100%;box-sizing:border-box;background:#0f1117;border:1px solid #262b36;color:#e6e8ee;border-radius:8px;padding:8px 10px;margin-bottom:8px}
-.oh-acct-panel button{width:100%;font:inherit;cursor:pointer;border:1px solid #7c3aed;background:#7c3aed;color:#fff;border-radius:8px;padding:8px 10px}
-.oh-acct-panel button.ghost{background:transparent;border-color:#262b36;color:#e6e8ee;margin-top:6px}
-.oh-acct-msg{color:#9aa2b1;font-size:12px;margin-top:8px}
-.oh-acct-msg a{color:#9ab0ff;word-break:break-all}
+.oh-acct-panel{position:absolute;top:38px;right:0;width:270px;background:#383330;border:1px solid #3f3a36;border-radius:6px;padding:14px}
+.oh-acct-panel h4{margin:0 0 4px;font-size:14px;font-weight:600;letter-spacing:-.2px;color:#f7f5f0}
+.oh-acct-panel p{margin:0 0 10px;color:#c9c0ad;font-size:12px}
+.oh-acct-panel input{width:100%;box-sizing:border-box;background:#2b2622;border:1px solid #3f3a36;color:#f7f5f0;border-radius:3px;padding:8px 10px;margin-bottom:8px}
+.oh-acct-panel button{width:100%;font:inherit;cursor:pointer;border:1px solid #f7f5f0;background:#f7f5f0;color:#2b2622;border-radius:3px;padding:8px 10px}
+.oh-acct-panel button.ghost{background:transparent;border-color:#3f3a36;color:#f7f5f0;margin-top:6px}
+.oh-acct-msg{color:#aea69c;font-size:12px;margin-top:8px}
+.oh-acct-msg a{color:#dad2c1;word-break:break-all}
 `;
 
 let root, btn, dot, label, panel, syncState = "idle", syncError = null;

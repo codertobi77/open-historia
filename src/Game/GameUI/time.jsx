@@ -26,6 +26,11 @@ import { setUnitsOverride } from "../Map/unitsController.js";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
 import { MAP_SETTING_KEYS, useMapSetting } from "../../runtime/mapSettings.js";
 import { FloatPanel } from "./FloatPanel.jsx";
+// Design tokens (DESIGN.md / tokens.js): warm canvas-soft surfaces + hairlines
+// replace the legacy glass chrome (rgba/blur/shadow, 16px radius, blue/violet
+// accents). Functional data colors — the move-trail amber, undo amber, error
+// red, fallback warning amber — are exempt and stay.
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 dayjs.extend(advancedFormat);
 
@@ -55,11 +60,11 @@ const ensureTimelineStyles = () => {
     }
 
     .timeline-markdown strong {
-        color: rgba(255,255,255,0.96);
+        color: #f7f5f0;
     }
 
     .timeline-markdown em {
-        color: rgba(216,227,255,0.78);
+        color: #dad2c1;
     }
 
     .timeline-markdown ul,
@@ -73,22 +78,22 @@ const ensureTimelineStyles = () => {
     }
 
     .timeline-markdown blockquote {
-        border-left: 2px solid rgba(96,165,250,0.55);
-        color: rgba(214,226,255,0.68);
+        border-left: 2px solid #3f3a36;
+        color: #c9c0ad;
         margin: 0.55rem 0;
         padding-left: 0.8rem;
     }
 
     .timeline-markdown code {
-        background: rgba(15,23,42,0.55);
-        border-radius: 4px;
+        background: #2b2622;
+        border-radius: 3px;
         padding: 0.05rem 0.32rem;
     }
     `;
     document.head.appendChild(style);
 };
 
-const SpinnerRing = ({ size = 14, tone = "rgba(255,255,255,0.88)" }) => {
+const SpinnerRing = ({ size = 14, tone = colors.primary }) => {
     useEffect(() => {
         ensureTimelineStyles();
     }, []);
@@ -102,7 +107,7 @@ const SpinnerRing = ({ size = 14, tone = "rgba(255,255,255,0.88)" }) => {
         aria-hidden="true"
         style={{ animation: "timeline-spin 0.7s linear infinite" }}
         >
-        <circle cx="12" cy="12" r="8" stroke="rgba(255,255,255,0.2)" strokeWidth="2.2" />
+        <circle cx="12" cy="12" r="8" stroke={colors.hairline} strokeWidth="2.2" />
         <path d="M12 4a8 8 0 0 1 8 8" stroke={tone} strokeWidth="2.2" strokeLinecap="round" />
         </svg>
     );
@@ -139,13 +144,11 @@ const ChevronDownIcon = () => (
 );
 
 const panelSurface = {
-    backgroundColor: "rgba(17, 24, 39, 0.95)",
-    backdropFilter: "blur(8px)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "16px",
-    boxShadow: "-4px 0 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
-    color: "white",
-    fontFamily: "sans-serif",
+    backgroundColor: colors.canvasSoft,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: `${rounded.md}px`,
+    color: colors.ink,
+    fontFamily: fonts.sans,
     overflow: "hidden",
     position: "fixed",
     width: PANEL_WIDTH,
@@ -154,14 +157,12 @@ const panelSurface = {
 
 const widgetSurface = {
     alignItems: "center",
-    backdropFilter: "blur(4px)",
-    backgroundColor: "rgba(17, 24, 39, 0.95)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "12px",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
-    color: "white",
+    backgroundColor: colors.canvasSoft,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: `${rounded.md}px`,
+    color: colors.ink,
     display: "flex",
-    fontFamily: "sans-serif",
+    fontFamily: fonts.sans,
     gap: "0.25rem",
     height: "3.5rem",
     justifyContent: "center",
@@ -176,13 +177,13 @@ const buttonStyle = {
     alignItems: "center",
     background: "none",
     border: "none",
-    borderRadius: "6px",
-    color: "rgba(255,255,255,0.7)",
+    borderRadius: `${rounded.sm}px`,
+    color: colors.body,
     cursor: "pointer",
     display: "flex",
     flexShrink: 0,
     fontSize: "1.5rem",
-    fontWeight: "900",
+    fontWeight: 900,
     height: "2rem",
     justifyContent: "center",
     lineHeight: 1,
@@ -605,21 +606,26 @@ const buildTurnRecord = ({ entry, index, history, eventLookup, game, lookups }) 
 };
 
 const MetricPill = ({ children, icon = null, tone = "default" }) => {
+    // Status pills on the event card. `default` is a quiet canvas pill; `accent`
+    // is polarity-flipped (off-white fill, dark text) for the map-change / fallback
+    // emphasis. `violet` is unused by call sites but kept as an alias of default
+    // so the tone map never returns undefined. Pill radius is the spec's status-
+    // pill exception (rounded.full is reserved for pills + icon containers).
     const toneMap = {
         default: {
-            background: "rgba(148,163,184,0.12)",
-            border: "1px solid rgba(148,163,184,0.18)",
-            color: "rgba(226,232,240,0.84)",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            color: colors.body,
         },
         accent: {
-            background: "rgba(96,165,250,0.12)",
-            border: "1px solid rgba(96,165,250,0.22)",
-            color: "#bfdbfe",
+            background: colors.primary,
+            border: "none",
+            color: colors.onPrimary,
         },
         violet: {
-            background: "rgba(168,85,247,0.12)",
-            border: "1px solid rgba(192,132,252,0.2)",
-            color: "#e9d5ff",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            color: colors.body,
         },
     };
 
@@ -631,7 +637,7 @@ const MetricPill = ({ children, icon = null, tone = "default" }) => {
             alignItems: "center",
             background: resolved.background,
             border: resolved.border,
-            borderRadius: "999px",
+            borderRadius: `${rounded.full}px`,
             color: resolved.color,
             display: "inline-flex",
             fontSize: "0.69rem",
@@ -650,14 +656,14 @@ const MetricPill = ({ children, icon = null, tone = "default" }) => {
 const TagPill = ({ children }) => (
     <span
     style={{
-        background: "rgba(255,255,255,0.04)",
-                                   border: "1px solid rgba(255,255,255,0.08)",
-                                   borderRadius: "999px",
-                                   color: "rgba(226,228,240,0.74)",
-                                   display: "inline-flex",
-                                   fontSize: "0.68rem",
-                                   fontWeight: 600,
-                                   padding: "0.24rem 0.55rem",
+        background: colors.canvas,
+        border: `1px solid ${colors.hairline}`,
+        borderRadius: `${rounded.full}px`,
+        color: colors.body,
+        display: "inline-flex",
+        fontSize: "0.68rem",
+        fontWeight: 600,
+        padding: "0.24rem 0.55rem",
     }}
     >
     {children}
@@ -666,10 +672,10 @@ const TagPill = ({ children }) => (
 
 const ghostButtonStyle = {
     alignItems: "center",
-    background: "rgba(255,255,255,0.035)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "10px",
-    color: "rgba(255,255,255,0.84)",
+    background: colors.canvas,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: `${rounded.sm}px`,
+    color: colors.bodyStrong,
     cursor: "pointer",
     display: "inline-flex",
     fontSize: "0.74rem",
@@ -729,28 +735,28 @@ const DiplomacyRow = ({ chat, defaultOpen = false }) => {
     return (
         <div
         style={{
-            background: "rgba(96,165,250,0.06)",
-            border: "1px solid rgba(96,165,250,0.16)",
-            borderRadius: "10px",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: `${rounded.sm}px`,
             overflow: "hidden",
         }}
         >
         <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            style={{
-                alignItems: "center",
-                background: "none",
-                border: "none",
-                color: "rgba(226,232,240,0.9)",
-                cursor: "pointer",
-                display: "flex",
-                gap: "0.5rem",
-                padding: "0.5rem 0.7rem",
-                textAlign: "left",
-                width: "100%",
-            }}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        style={{
+            alignItems: "center",
+            background: "none",
+            border: "none",
+            color: colors.ink,
+            cursor: "pointer",
+            display: "flex",
+            gap: "0.5rem",
+            padding: "0.5rem 0.7rem",
+            textAlign: "left",
+            width: "100%",
+        }}
         >
             <span style={{ flexShrink: 0, fontSize: "0.95rem", lineHeight: 1 }}>{flag}</span>
             <span style={{ display: "flex", flex: 1, flexDirection: "column", gap: "0.08rem", minWidth: 0 }}>
@@ -758,7 +764,7 @@ const DiplomacyRow = ({ chat, defaultOpen = false }) => {
             {speaker}
             </span>
             {title && (
-                <span style={{ fontSize: "0.69rem", color: "rgba(148,163,184,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: "0.69rem", color: colors.mute, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {title}
                 </span>
             )}
@@ -769,8 +775,8 @@ const DiplomacyRow = ({ chat, defaultOpen = false }) => {
             <div
             className="timeline-markdown"
             style={{
-                borderTop: "1px solid rgba(96,165,250,0.16)",
-                color: "rgba(221,228,240,0.82)",
+                borderTop: `1px solid ${colors.hairline}`,
+                color: colors.body,
                 fontSize: "0.77rem",
                 lineHeight: "1.55",
                 padding: "0.6rem 0.75rem 0.7rem",
@@ -806,18 +812,17 @@ const EventCard = ({ event, footer = null, lookups }) => {
     return (
         <div
         style={{
-            background: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.03))",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "16px",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+            background: colors.canvasSoft,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: `${rounded.md}px`,
             overflow: "hidden",
         }}
         >
         <div
         style={{
             alignItems: "center",
-            background: "rgba(255,255,255,0.02)",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            background: colors.canvas,
+            borderBottom: `1px solid ${colors.hairline}`,
             display: "flex",
             gap: "0.45rem",
             justifyContent: "space-between",
@@ -840,7 +845,7 @@ const EventCard = ({ event, footer = null, lookups }) => {
         {locationLabel && (
             <span
             style={{
-                color: "rgba(191,219,254,0.9)",
+                color: colors.bodyStrong,
                 fontSize: "0.7rem",
                 fontWeight: 700,
                 letterSpacing: "0.04em",
@@ -865,12 +870,12 @@ const EventCard = ({ event, footer = null, lookups }) => {
             </div>
         )}
 
-        <div style={{ color: "rgba(255,255,255,0.94)", fontSize: "0.82rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        <div style={{ color: colors.ink, fontSize: "0.82rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
         {event.title}
         </div>
 
         {event.description && (
-            <div className="timeline-markdown" style={{ color: "rgba(221,228,240,0.82)", fontSize: "0.77rem", lineHeight: "1.58" }}>
+            <div className="timeline-markdown" style={{ color: colors.body, fontSize: "0.77rem", lineHeight: "1.58" }}>
             <ReactMarkdown>{event.description}</ReactMarkdown>
             </div>
         )}
@@ -887,18 +892,18 @@ const EmptyPanelState = ({ text }) => (
     <div
     style={{
         alignItems: "center",
-        background: "rgba(255,255,255,0.03)",
-                                       border: "1px dashed rgba(255,255,255,0.1)",
-                                       borderRadius: "16px",
-                                       color: "rgba(214,226,255,0.48)",
-                                       display: "flex",
-                                       fontSize: "0.78rem",
-                                       fontStyle: "italic",
-                                       justifyContent: "center",
-                                       lineHeight: "1.55",
-                                       minHeight: "9.5rem",
-                                       padding: "1.1rem",
-                                       textAlign: "center",
+        background: colors.canvas,
+        border: `1px dashed ${colors.hairline}`,
+        borderRadius: `${rounded.md}px`,
+        color: colors.mute,
+        display: "flex",
+        fontSize: "0.78rem",
+        fontStyle: "italic",
+        justifyContent: "center",
+        lineHeight: "1.55",
+        minHeight: "9.5rem",
+        padding: "1.1rem",
+        textAlign: "center",
     }}
     >
     {text}
@@ -964,7 +969,7 @@ const PanelChrome = ({
         >
         <div
         style={{
-            borderBottom: hasHeaderText ? "1px solid rgba(255,255,255,0.07)" : "none",
+            borderBottom: hasHeaderText ? `1px solid ${colors.hairline}` : "none",
             flexShrink: 0,
             padding: hasHeaderText ? "1rem 1.25rem 0.75rem" : "0.7rem 0.75rem 0",
         }}
@@ -973,17 +978,17 @@ const PanelChrome = ({
         {hasHeaderText && (
             <div style={{ minWidth: 0 }}>
             {eyebrow && (
-                <div style={{ color: "rgba(147,197,253,0.75)", fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.14em", marginBottom: "0.12rem", textTransform: "uppercase" }}>
+                <div style={{ color: colors.mute, fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.14em", marginBottom: "0.12rem", textTransform: "uppercase" }}>
                 {eyebrow}
                 </div>
             )}
             {title && (
-                <div style={{ color: "rgba(255,255,255,0.96)", fontSize: "1rem", fontWeight: 700 }}>
+                <div style={{ color: colors.ink, fontSize: "1rem", fontWeight: 700 }}>
                 {title}
                 </div>
             )}
             {subtitle && (
-                <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.75rem", lineHeight: "1.45", marginTop: "0.12rem" }}>
+                <div style={{ color: colors.mute, fontSize: "0.75rem", lineHeight: "1.45", marginTop: "0.12rem" }}>
                 {subtitle}
                 </div>
             )}
@@ -995,8 +1000,8 @@ const PanelChrome = ({
         style={{
             background: "none",
             border: "none",
-            borderRadius: "6px",
-            color: "rgba(255,255,255,0.5)",
+            borderRadius: `${rounded.sm}px`,
+            color: colors.mute,
             cursor: "pointer",
             display: "flex",
             fontSize: "1.1rem",
@@ -1005,12 +1010,12 @@ const PanelChrome = ({
             transition: "all 0.15s ease",
         }}
         onMouseEnter={(event) => {
-            event.currentTarget.style.background = "rgba(255,255,255,0.08)";
-            event.currentTarget.style.color = "white";
+            event.currentTarget.style.background = colors.canvas;
+            event.currentTarget.style.color = colors.primary;
         }}
         onMouseLeave={(event) => {
             event.currentTarget.style.background = "none";
-            event.currentTarget.style.color = "rgba(255,255,255,0.5)";
+            event.currentTarget.style.color = colors.mute;
         }}
         aria-label="Close panel"
         >
@@ -1042,10 +1047,10 @@ const JumpNode = ({ isLoading, opt, onJump }) => {
             onJump(opt.days);
         }}
         style={{
-            background: hovered ? "rgba(109,40,217,0.35)" : "rgba(109,40,217,0.15)",
-            border: hovered ? "1px solid rgba(139,92,246,0.7)" : "1px solid rgba(139,92,246,0.35)",
-            borderRadius: "10px",
-            color: "white",
+            background: hovered ? colors.canvasSoft : colors.canvas,
+            border: `1px solid ${hovered ? colors.mute : colors.hairline}`,
+            borderRadius: `${rounded.sm}px`,
+            color: colors.ink,
             cursor: "pointer",
             opacity: isLoading ? 0.7 : 1,
             outline: "none",
@@ -1056,7 +1061,7 @@ const JumpNode = ({ isLoading, opt, onJump }) => {
         }}
         >
         <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{opt.sublabel}</div>
-        <div style={{ color: "rgba(196,165,255,0.7)", fontSize: "0.7rem" }}>
+        <div style={{ color: colors.mute, fontSize: "0.7rem" }}>
         {opt.label}
         </div>
         </button>
@@ -1120,9 +1125,11 @@ const TimelineSkipPanel = ({
             disabled={isLoading}
             onClick={() => { if (!isLoading) onUndo(); }}
             style={{
+                // Undo is a destructive-leaning action — the amber functional
+                // tint stays (data/semantic color exemption).
                 background: "rgba(180,83,9,0.18)",
                 border: "1px solid rgba(245,158,11,0.5)",
-                borderRadius: "10px",
+                borderRadius: `${rounded.sm}px`,
                 color: "#fcd9a8",
                 cursor: isLoading ? "default" : "pointer",
                 opacity: isLoading ? 0.7 : 1,
@@ -1136,15 +1143,15 @@ const TimelineSkipPanel = ({
             {undoCount} turn{undoCount === 1 ? "" : "s"} can be undone
             </div>
             </button>
-            <div style={{ background: "rgba(139,92,246,0.4)", height: "1.25rem", width: "2px" }} />
+            <div style={{ background: colors.hairline, height: "1.25rem", width: "2px" }} />
             </>
         )}
         <div
         style={{
-            background: "rgba(109,40,217,0.2)",
-            border: "2px solid rgba(139,92,246,0.8)",
-            borderRadius: "999px",
-            color: "rgba(196,165,255,0.95)",
+            background: colors.primary,
+            border: "none",
+            borderRadius: `${rounded.full}px`,
+            color: colors.onPrimary,
             fontSize: "0.7rem",
             fontWeight: 700,
             letterSpacing: "0.04em",
@@ -1158,12 +1165,12 @@ const TimelineSkipPanel = ({
 
         {jumpOptions.map((opt) => (
             <React.Fragment key={opt.label}>
-            <div style={{ background: "rgba(139,92,246,0.4)", height: "1.25rem", width: "2px" }} />
+            <div style={{ background: colors.hairline, height: "1.25rem", width: "2px" }} />
             <JumpNode isLoading={isLoading} opt={opt} onJump={onJump} />
             </React.Fragment>
         ))}
 
-        <div style={{ background: "rgba(139,92,246,0.4)", height: "1.25rem", width: "2px" }} />
+        <div style={{ background: colors.hairline, height: "1.25rem", width: "2px" }} />
         <button
         type="button"
         onClick={() => {
@@ -1174,10 +1181,10 @@ const TimelineSkipPanel = ({
             onAutoJump();
         }}
         style={{
-            background: "rgba(37,99,235,0.2)",
-            border: "1px solid rgba(96,165,250,0.45)",
-            borderRadius: "12px",
-            color: "white",
+            background: colors.primary,
+            border: "none",
+            borderRadius: `${rounded.sm}px`,
+            color: colors.onPrimary,
             cursor: "pointer",
             opacity: isLoading ? 0.72 : 1,
             padding: "0.55rem 0.7rem",
@@ -1188,13 +1195,13 @@ const TimelineSkipPanel = ({
         <div style={{ fontSize: "0.85rem", fontWeight: 700 }}>Auto-jump</div>
         </button>
 
-        <div style={{ background: "rgba(139,92,246,0.4)", height: "1.25rem", width: "2px" }} />
+        <div style={{ background: colors.hairline, height: "1.25rem", width: "2px" }} />
         <div
         style={{
             alignItems: "center",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "12px",
+            background: colors.canvas,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: `${rounded.sm}px`,
             display: "flex",
             gap: "0.35rem",
             padding: "0.45rem 0.5rem",
@@ -1211,10 +1218,10 @@ const TimelineSkipPanel = ({
         placeholder="Custom"
         disabled={isLoading}
         style={{
-            background: "rgba(0,0,0,0.25)",
-            border: "1px solid rgba(255,255,255,0.16)",
-            borderRadius: "8px",
-            color: "#fff",
+            background: colors.canvasSoft,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: `${rounded.sm}px`,
+            color: colors.ink,
             fontSize: "0.8rem",
             minWidth: 0,
             outline: "none",
@@ -1228,10 +1235,10 @@ const TimelineSkipPanel = ({
         onChange={(event) => setCustomUnit(event.target.value)}
         disabled={isLoading}
         style={{
-            background: "rgba(0,0,0,0.25)",
-            border: "1px solid rgba(255,255,255,0.16)",
-            borderRadius: "8px",
-            color: "#fff",
+            background: colors.canvasSoft,
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: `${rounded.sm}px`,
+            color: colors.ink,
             cursor: "pointer",
             flex: 1,
             fontSize: "0.8rem",
@@ -1251,10 +1258,10 @@ const TimelineSkipPanel = ({
         onClick={runCustomJump}
         disabled={isLoading || !customValue}
         style={{
-            background: "rgba(109,40,217,0.4)",
-            border: "1px solid rgba(139,92,246,0.6)",
-            borderRadius: "8px",
-            color: "#fff",
+            background: colors.primary,
+            border: "none",
+            borderRadius: `${rounded.sm}px`,
+            color: colors.onPrimary,
             cursor: isLoading || !customValue ? "default" : "pointer",
             fontSize: "0.8rem",
             fontWeight: 700,
@@ -1271,15 +1278,15 @@ const TimelineSkipPanel = ({
             <div
             style={{
                 alignItems: "center",
-                background: "rgba(255,255,255,0.04)",
-                       border: "1px solid rgba(255,255,255,0.08)",
-                       borderRadius: "12px",
-                       color: "rgba(255,255,255,0.75)",
-                       display: "flex",
-                       fontSize: "0.76rem",
-                       gap: "0.55rem",
-                       justifyContent: "center",
-                       padding: "0.68rem 0.8rem",
+                background: colors.canvas,
+                border: `1px solid ${colors.hairline}`,
+                borderRadius: `${rounded.sm}px`,
+                color: colors.body,
+                display: "flex",
+                fontSize: "0.76rem",
+                gap: "0.55rem",
+                justifyContent: "center",
+                padding: "0.68rem 0.8rem",
             }}
             >
             <SpinnerRing size={15} />
@@ -1289,9 +1296,10 @@ const TimelineSkipPanel = ({
                 type="button"
                 onClick={onCancel}
                 style={{
+                    // Cancel keeps its red functional tint.
                     background: "rgba(220,38,38,0.18)",
                     border: "1px solid rgba(248,113,113,0.5)",
-                    borderRadius: "8px",
+                    borderRadius: `${rounded.sm}px`,
                     color: "#fecaca",
                     cursor: "pointer",
                     fontSize: "0.74rem",
@@ -1309,13 +1317,14 @@ const TimelineSkipPanel = ({
         {error && (
             <div
             style={{
+                // Error state keeps its red functional tint.
                 background: "rgba(127,29,29,0.24)",
-                   border: "1px solid rgba(248,113,113,0.3)",
-                   borderRadius: "16px",
-                   color: "#fecaca",
-                   fontSize: "0.76rem",
-                   lineHeight: "1.5",
-                   padding: "0.85rem 0.9rem",
+                border: "1px solid rgba(248,113,113,0.3)",
+                borderRadius: `${rounded.md}px`,
+                color: "#fecaca",
+                fontSize: "0.76rem",
+                lineHeight: "1.5",
+                padding: "0.85rem 0.9rem",
             }}
             >
             {error}
@@ -1368,9 +1377,10 @@ const TimelineHistoryPanel = ({
         {warning && (
             <div
             style={{
+                // Fallback-warning amber stays (functional/semantic color exemption).
                 background: "rgba(120,53,15,0.24)",
                 border: "1px solid rgba(251,191,36,0.35)",
-                borderRadius: "12px",
+                borderRadius: `${rounded.sm}px`,
                 color: "#fde68a",
                 fontSize: "0.76rem",
                 lineHeight: "1.5",
@@ -2025,12 +2035,14 @@ const DateWidget = ({
         type="button"
         style={{
             ...buttonStyle,
-            color: openPanel === "history" ? "#bfdbfe" : buttonStyle.color,
+            // Active toggle uses the primary off-white (polarity-flip intent)
+            // instead of the legacy blue #bfdbfe accent.
+            color: openPanel === "history" ? colors.primary : buttonStyle.color,
         }}
         onClick={() => togglePanel("history")}
         onMouseEnter={(event) => {
             if (openPanel !== "history") {
-                event.currentTarget.style.color = "white";
+                event.currentTarget.style.color = colors.primary;
             }
         }}
         onMouseLeave={(event) => {
@@ -2047,7 +2059,7 @@ const DateWidget = ({
             <div style={{ alignItems: "baseline", display: "flex", gap: "0.5rem", justifyContent: "center", maxWidth: "100%", minWidth: 0 }}>
             <span
             style={{
-                color: "rgba(147,197,253,0.88)",
+                color: colors.bodyStrong,
                 fontSize: isMobile ? "0.68rem" : "0.8rem",
                 fontWeight: 700,
                 letterSpacing: "0.05em",
@@ -2060,12 +2072,12 @@ const DateWidget = ({
             >
             {playerCountry}
             </span>
-            <span style={{ color: "rgba(255,255,255,0.94)", flexShrink: 0, fontSize: isMobile ? "0.82rem" : "0.95rem", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
+            <span style={{ color: colors.ink, flexShrink: 0, fontSize: isMobile ? "0.82rem" : "0.95rem", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
             {displayDate}
             </span>
             </div>
         ) : (
-            <div style={{ color: "rgba(255,255,255,0.94)", fontSize: "0.95rem", letterSpacing: "0.02em" }}>
+            <div style={{ color: colors.ink, fontSize: "0.95rem", letterSpacing: "0.02em" }}>
             {displayDate}
             </div>
         )}
@@ -2075,7 +2087,7 @@ const DateWidget = ({
         type="button"
         style={{
             ...buttonStyle,
-            color: openPanel === "skip" ? "rgba(196,165,255,0.9)" : buttonStyle.color,
+            color: openPanel === "skip" ? colors.primary : buttonStyle.color,
         }}
         onClick={() => {
             if (isLoading) {
@@ -2087,7 +2099,7 @@ const DateWidget = ({
         }}
         onMouseEnter={(event) => {
             if (openPanel !== "skip") {
-                event.currentTarget.style.color = "white";
+                event.currentTarget.style.color = colors.primary;
             }
         }}
         onMouseLeave={(event) => {
@@ -2096,7 +2108,7 @@ const DateWidget = ({
             }
         }}
         >
-        {isLoading ? <SpinnerRing size={15} tone="rgba(196,165,255,0.95)" /> : "\u00BB"}
+        {isLoading ? <SpinnerRing size={15} tone={colors.primary} /> : "\u00BB"}
         </button>
         </div>
         </>

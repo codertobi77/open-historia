@@ -10,7 +10,10 @@
 import Icon from "./Icon.jsx";
 import { panelSurface, inputStyle } from "./editorStyles.js";
 import { editorBasemapById } from "./basemaps.js";
+import { colors, rounded } from "../design/tokens.js";
 
+// Save-status colors are functional/semantic (green = saved, amber = dirty,
+// red = error) — a DESIGN.md data-color exemption, not brand chrome.
 const SAVE = {
   saved: { color: "#22c55e", label: "All saved" },
   dirty: { color: "#f59e0b", label: "Unsaved changes" },
@@ -27,12 +30,14 @@ const Chip = ({ icon, label, active, onClick }) => (
       alignItems: "center",
       gap: 6,
       padding: "5px 10px",
-      background: active ? "rgba(59,130,246,0.4)" : "rgba(255,255,255,0.06)",
-      border: active ? "1px solid rgba(59,130,246,0.8)" : "1px solid rgba(255,255,255,0.1)",
-      borderRadius: 8,
+      // Active state is the polarity flip (off-white fill + dark text), not a
+      // chromatic accent.
+      background: active ? colors.primary : colors.canvas,
+      border: active ? `1px solid ${colors.primary}` : `1px solid ${colors.hairline}`,
+      borderRadius: rounded.sm,
       fontSize: 12,
       fontWeight: 600,
-      color: "rgba(255,255,255,0.9)",
+      color: active ? colors.onPrimary : colors.ink,
       cursor: onClick ? "pointer" : "default",
     }}
   >
@@ -105,8 +110,9 @@ const BottomBar = ({
         style={{ ...inputStyle, width: 190 }}
       />
 
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12 }}>
-        <span style={{ width: 9, height: 9, borderRadius: "50%", background: save.color, boxShadow: `0 0 8px ${save.color}` }} />
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: colors.bodyStrong }}>
+        {/* Status pill: full radius is sanctioned for status indicators. */}
+        <span style={{ width: 9, height: 9, borderRadius: rounded.full, background: save.color }} />
         {save.label}
       </span>
     </div>

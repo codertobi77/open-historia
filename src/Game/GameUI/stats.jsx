@@ -9,6 +9,7 @@ import COUNTRY_NAMES from "../../runtime/generated/countryNames.js";
 import { setRegionClickObserver } from "../Selection/Regions.jsx";
 import { generateCountryStatSheet } from "../AI/gameplay.js";
 import { validateGameplayPayload } from "../AI/gameplaySchemas.js";
+import { colors, rounded } from "../../design/tokens.js";
 
 // Sheets are regenerated when the game date moves; within a date they persist
 // across reloads so flipping between countries stays instant.
@@ -70,7 +71,7 @@ const INDEX_ROWS = [
 ];
 
 const sectionTitleStyle = {
-    color: "rgba(255,255,255,0.45)",
+    color: colors.mute,
     fontSize: "0.68rem",
     fontWeight: 700,
     letterSpacing: "0.08em",
@@ -78,15 +79,17 @@ const sectionTitleStyle = {
     textTransform: "uppercase",
 };
 
+// Card chrome follows the design language: darker canvas fill + hairline,
+// tight radius. The colored bars INSIDE stay — they are data visualization.
 const cardStyle = {
-    backgroundColor: "rgba(255,255,255,0.045)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "10px",
+    backgroundColor: colors.canvas,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: rounded.sm,
     padding: "0.6rem 0.7rem",
 };
 
 const Bar = ({ value, color }) => (
-    <div style={{ backgroundColor: "rgba(255,255,255,0.1)", borderRadius: "999px", height: "6px", overflow: "hidden" }}>
+    <div style={{ backgroundColor: colors.canvasSoft, borderRadius: "999px", height: "6px", overflow: "hidden" }}>
     <div style={{ backgroundColor: color, borderRadius: "999px", height: "100%", width: `${clamp01(value)}%`, transition: "width 0.4s" }} />
     </div>
 );
@@ -112,11 +115,11 @@ const compactEconomyValue = (value) => {
 
 const EconomyCard = ({ label, value, sub, tone }) => (
     <div style={cardStyle}>
-    <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.06em", marginBottom: "0.3rem", textTransform: "uppercase" }}>
+    <div style={{ color: colors.mute, fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.06em", marginBottom: "0.3rem", textTransform: "uppercase" }}>
     {label}
     </div>
     <div data-no-translate style={{ color: tone, fontSize: "1.05rem", fontWeight: 800 }}>{compactEconomyValue(value) || "—"}</div>
-    {sub && <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", marginTop: "0.15rem" }}>{sub}</div>}
+    {sub && <div style={{ color: colors.mute, fontSize: "0.68rem", marginTop: "0.15rem" }}>{sub}</div>}
     </div>
 );
 
@@ -293,7 +296,7 @@ const StatsPane = ({ active }) => {
         <div style={{ flex: 1, overflowY: "auto", padding: "0.9rem 1rem 1.25rem", scrollbarWidth: "none" }}>
 
         {!targetCountry && (
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.85rem" }}>
+            <p style={{ color: colors.mute, fontSize: "0.85rem" }}>
             No active game. Start one to see national statistics.
             </p>
         )}
@@ -302,7 +305,9 @@ const StatsPane = ({ active }) => {
             <>
             {/* Country header */}
             <div style={{ alignItems: "flex-start", display: "flex", gap: "0.7rem" }}>
-            <div style={{ alignItems: "center", backgroundColor: "rgba(59,130,246,0.16)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "10px", color: "#93c5fd", display: "flex", flexShrink: 0, fontSize: "0.95rem", fontWeight: 800, height: "2.6rem", justifyContent: "center", overflow: "hidden", width: "2.6rem" }}>
+            {/* Flag tile: neutral canvas-soft + hairline (the flag itself is
+                the color; no blue tint around it). */}
+            <div style={{ alignItems: "center", backgroundColor: colors.canvasSoft, border: `1px solid ${colors.hairline}`, borderRadius: rounded.sm, color: colors.bodyStrong, display: "flex", flexShrink: 0, fontSize: "0.95rem", fontWeight: 800, height: "2.6rem", justifyContent: "center", overflow: "hidden", width: "2.6rem" }}>
             {flagUrl && !flagFailed ? (
                 <img
                 alt=""
@@ -325,11 +330,11 @@ const StatsPane = ({ active }) => {
             </div>
             {sheet && (
                 <>
-                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.76rem", marginTop: "0.15rem" }}>
+                <div style={{ color: colors.body, fontSize: "0.76rem", marginTop: "0.15rem" }}>
                 {[sheet.capital, sheet.continent].filter(Boolean).join(" · ")}
                 </div>
                 {sheet.government && (
-                    <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.72rem", marginTop: "0.1rem" }}>
+                    <div style={{ color: colors.mute, fontSize: "0.72rem", marginTop: "0.1rem" }}>
                     {sheet.government}
                     </div>
                 )}
@@ -345,13 +350,13 @@ const StatsPane = ({ active }) => {
                 <button
                 onClick={() => loadSheet({ force: true })}
                 title="Regenerate this stat sheet"
-                style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: "1rem", padding: 0 }}
+                style={{ background: "none", border: "none", color: colors.mute, cursor: "pointer", fontSize: "1rem", padding: 0 }}
                 >↻</button>
             )}
             </div>
 
             {state.status === "loading" && (
-                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.82rem", marginTop: "1rem" }}>
+                <p style={{ color: colors.mute, fontSize: "0.82rem", marginTop: "1rem" }}>
                 Compiling the stat sheet…
                 </p>
             )}
@@ -361,7 +366,7 @@ const StatsPane = ({ active }) => {
                 {state.error}
                 <button
                 onClick={() => loadSheet({ force: true })}
-                style={{ background: "none", border: "none", color: "#93c5fd", cursor: "pointer", display: "block", fontSize: "0.8rem", fontWeight: 700, marginTop: "0.4rem", padding: 0 }}
+                style={{ background: "none", border: "none", color: colors.primary, cursor: "pointer", display: "block", fontSize: "0.8rem", fontWeight: 700, marginTop: "0.4rem", padding: 0 }}
                 >Try again</button>
                 </div>
             )}
@@ -371,7 +376,7 @@ const StatsPane = ({ active }) => {
                 {/* National stability */}
                 <div style={{ ...cardStyle, marginTop: "1rem" }}>
                 <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", marginBottom: "0.45rem" }}>
-                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <span style={{ color: colors.mute, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 ⚠ National stability
                 </span>
                 <span data-no-translate style={{ fontSize: "0.85rem", fontWeight: 800 }}>
@@ -389,7 +394,7 @@ const StatsPane = ({ active }) => {
                     return (
                         <div key={row.key} style={cardStyle}>
                         <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                        <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.76rem" }}>
+                        <span style={{ color: colors.bodyStrong, fontSize: "0.76rem" }}>
                         {row.icon} {row.label}
                         </span>
                         <span data-no-translate style={{ fontSize: "0.78rem", fontWeight: 800 }}>{value}%</span>
@@ -418,7 +423,7 @@ const StatsPane = ({ active }) => {
 
                 {/* GDP breakdown */}
                 <div style={{ ...cardStyle, marginTop: "0.9rem" }}>
-                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.74rem", marginBottom: "0.5rem" }}>
+                <div style={{ color: colors.body, fontSize: "0.74rem", marginBottom: "0.5rem" }}>
                 GDP breakdown
                 </div>
                 <div style={{ borderRadius: "999px", display: "flex", height: "10px", overflow: "hidden" }}>
@@ -428,7 +433,7 @@ const StatsPane = ({ active }) => {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem 0.8rem", marginTop: "0.5rem" }}>
                 {breakdown.map((part) => (
-                    <span key={part.key} style={{ alignItems: "center", color: "rgba(255,255,255,0.6)", display: "flex", fontSize: "0.68rem", gap: "0.3rem" }}>
+                    <span key={part.key} style={{ alignItems: "center", color: colors.body, display: "flex", fontSize: "0.68rem", gap: "0.3rem" }}>
                     <span style={{ backgroundColor: part.color, borderRadius: "2px", height: "7px", width: "7px" }} />
                     {part.label} <span data-no-translate>{part.value}%</span>
                     </span>
@@ -438,7 +443,7 @@ const StatsPane = ({ active }) => {
                 </>
             )}
 
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.7rem", marginTop: "1rem" }}>
+            <p style={{ color: colors.mute, fontSize: "0.7rem", marginTop: "1rem" }}>
             Click any country on the map to inspect it.
             </p>
             </>

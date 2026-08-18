@@ -11,6 +11,7 @@ import Units from "./Units";
 import UnitPopup from "../Selection/Units";
 import MarkersLayer from "./MarkersLayer.jsx";
 import FeaturePopup from "../Selection/Features.jsx";
+import { colors, rounded } from "../../design/tokens.js";
 import {
   DEFAULT_BASEMAP_ID,
   TERRAIN_TILE_TEMPLATE,
@@ -337,20 +338,22 @@ function World({ mapRef, projection, terrainEnabled, onInitialIdle }) {
         />
       )}
       {loading && (
+        // Status pill: canvas-soft fill + hairline, full radius (sanctioned
+        // for status pills), no blur.
         <div style={{
           position: "absolute",
           bottom: 20,
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 5,
-          background: "rgba(0,0,0,0.6)",
-          color: "#aab",
+          background: colors.canvasSoft,
+          border: `1px solid ${colors.hairline}`,
+          color: colors.body,
           padding: "6px 14px",
-          borderRadius: 20,
+          borderRadius: rounded.full,
           fontSize: 13,
           pointerEvents: "none",
           transition: "opacity 0.3s",
-          backdropFilter: "blur(4px)",
         }}>
           Loading tiles…
         </div>

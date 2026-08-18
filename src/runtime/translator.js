@@ -21,6 +21,7 @@ import {
   languageDisplayName,
   syncLanguageFromServer,
 } from "./i18n.js";
+import { colors, fonts } from "../design/tokens.js";
 
 const CACHE_PREFIX = "i18n_cache_";
 const CACHE_LIMIT = 8000;
@@ -113,11 +114,14 @@ const showProgress = () => {
   if (progressEl || typeof document === "undefined" || !document.body) return;
   progressEl = document.createElement("div");
   progressEl.setAttribute("data-no-translate", "");
+  // Status pill follows the design tokens: warm canvas-soft fill + 1px hairline,
+  // full radius (sanctioned for status pills), no blur and no drop shadow. The
+  // legacy purple accent border and shadow are gone.
   progressEl.style.cssText =
     "position:fixed;bottom:5.2rem;left:50%;transform:translateX(-50%);z-index:10075;" +
-    "background:rgba(17,24,39,0.96);border:1px solid rgba(139,92,246,0.5);border-radius:999px;" +
-    "color:#fff;font-family:sans-serif;font-size:0.8rem;font-weight:600;padding:0.45rem 0.95rem;" +
-    "box-shadow:0 6px 24px rgba(0,0,0,0.5);pointer-events:none;";
+    `background:${colors.canvasSoft};border:1px solid ${colors.hairline};border-radius:999px;` +
+    `color:${colors.ink};font-family:${fonts.sans};font-size:0.8rem;font-weight:600;padding:0.45rem 0.95rem;` +
+    "pointer-events:none;";
   document.body.appendChild(progressEl);
 };
 

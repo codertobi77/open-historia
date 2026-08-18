@@ -6,24 +6,25 @@ import { sendMessage, startChat, loadHistory } from "../AI/main.jsx";
 import { JSON_URLS, readJson, writeJson } from "../../runtime/assets.js";
 import { chatLanguageDiffersFromUi, isRtlLanguage, resolveChatLanguage } from "../../runtime/i18n.js";
 import StatsPane from "./stats.jsx";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 Chart.register(...registerables);
 
 const ADVISOR_PANEL_WIDTH = "min(20rem, calc(100vw - 1rem))";
 
+// Design-system chrome (DESIGN.md / src/design/tokens.js): warm canvas-soft
+// surface + hairline border, no blur or drop shadow.
 const baseStyle = {
     position: "fixed",
-    backgroundColor: "rgba(17, 24, 39, 0.9)",
-    backdropFilter: "blur(4px)",
+    backgroundColor: colors.canvasSoft,
     zIndex: 9999,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "white",
-    fontFamily: "sans-serif",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
+    color: colors.primary,
+    fontFamily: fonts.sans,
+    borderRadius: rounded.md,
+    border: `1px solid ${colors.hairline}`,
 };
 
 const ThinkingDots = () => {
@@ -162,6 +163,8 @@ const loadMessages = async () => {
     } catch { return []; }
 };
 
+// Active tab = off-white underline + full-strength text (the design
+// language's polarity flip instead of a chromatic accent).
 const TabButton = ({ icon, label, active, onClick }) => (
     <button
     onClick={onClick}
@@ -169,11 +172,11 @@ const TabButton = ({ icon, label, active, onClick }) => (
         alignItems: "center",
         background: "none",
         border: "none",
-        borderBottom: active ? "2px solid #3b82f6" : "2px solid transparent",
-        color: active ? "white" : "rgba(255,255,255,0.55)",
+        borderBottom: active ? `2px solid ${colors.primary}` : "2px solid transparent",
+        color: active ? colors.primary : colors.mute,
         cursor: "pointer",
         display: "flex",
-        fontFamily: "sans-serif",
+        fontFamily: fonts.sans,
         fontSize: "0.88rem",
         fontWeight: active ? 700 : 500,
         gap: "0.4rem",
@@ -340,15 +343,16 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
             // (the old BAR_HEIGHT) short of the top to clear it. Anchored bottom: 0
             // above, so height: 100vh reaches the top edge.
             width: typeof width === "number" ? `${width}px` : ADVISOR_PANEL_WIDTH, height: "100vh",
-            backgroundColor: "rgba(17, 24, 39, 0.95)", backdropFilter: "blur(8px)",
+            // Design-system surface: solid warm canvas-soft, hairline edge,
+            // no blur or drop shadow.
+            backgroundColor: colors.canvasSoft,
             // Above every HUD button/panel (toolbar 9999, forces 10000,
             // library panels 10031) so nothing covers the open drawer on
             // phones; below the editor (10050) and server-down (10060) overlays.
-            zIndex: 10040, borderLeft: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "-4px 0 24px rgba(0,0,0,0.4)",
+            zIndex: 10040, borderLeft: `1px solid ${colors.hairline}`,
             transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
             display: "flex", flexDirection: "column",
-            color: "white", fontFamily: "sans-serif", overflow: "hidden",
+            color: colors.primary, fontFamily: fonts.sans, overflow: "hidden",
         }}>
         {/* Drag the left edge to resize the drawer (main.jsx clamps + persists). */}
         {typeof onResize === "function" && (
@@ -366,14 +370,14 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
                 <div style={{
                     width: "3px", height: "42px", borderRadius: "2px",
                     backgroundColor: isResizing
-                        ? "rgba(96,165,250,0.95)"
-                        : handleHover ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.22)",
+                        ? colors.primary
+                        : handleHover ? colors.body : colors.mute,
                     transition: "background-color 0.15s",
                 }} />
             </div>
         )}
         {/* Header: tabs to flip between the advisor chat and national stats. */}
-        <div style={{ alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", padding: "0 0.75rem 0 0.35rem" }}>
+        <div style={{ alignItems: "center", borderBottom: `1px solid ${colors.hairline}`, display: "flex", padding: "0 0.75rem 0 0.35rem" }}>
         <TabButton icon="🧭" label="Advisor" active={activeTab === "advisor"} onClick={() => setActiveTab("advisor")} />
         <TabButton icon="📊" label="Stats" active={activeTab === "stats"} onClick={() => setActiveTab("stats")} />
         <div style={{ flex: 1 }} />
@@ -381,7 +385,7 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
             <button
             onClick={async () => { setMessages([]); startChat(); await saveMessages([]); }}
             title="Clear chat"
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: "1.35rem", lineHeight: 1, padding: 0, display: "flex", alignItems: "center" }}
+            style={{ background: "none", border: "none", color: colors.mute, cursor: "pointer", fontSize: "1.35rem", lineHeight: 1, padding: 0, display: "flex", alignItems: "center" }}
             >🗑</button>
         )}
         {/* On phones the panel slides over the 🧭 launcher, making it
@@ -390,7 +394,7 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
             <button
             onClick={onClose}
             title="Close advisor"
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: "1.35rem", lineHeight: 1, padding: "0 0 0 0.5rem", display: "flex", alignItems: "center" }}
+            style={{ background: "none", border: "none", color: colors.mute, cursor: "pointer", fontSize: "1.35rem", lineHeight: 1, padding: "0 0 0 0.5rem", display: "flex", alignItems: "center" }}
             >✕</button>
         )}
         </div>
@@ -404,7 +408,7 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
         {/* Messages */}
         <div style={{ padding: "0.75rem", flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: "1rem", scrollbarWidth: "none" }}>
         {messages.length === 0 && (
-            <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.5)", marginTop: 0 }}>
+            <p style={{ fontSize: "0.85rem", color: colors.mute, marginTop: 0 }}>
             No messages yet. Ask your advisor something!
             </p>
         )}
@@ -417,18 +421,22 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
             return (
                 <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start" }}>
                 {msg.role !== "user" && (
-                    <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", marginBottom: "0.25rem" }}>
+                    <span style={{ fontSize: "0.7rem", color: colors.mute, marginBottom: "0.25rem" }}>
                     {msg.role === "error" ? "⚠️ Error" : "🧭 Advisor"}
                     </span>
                 )}
-                {/* Player-typed text stays verbatim under UI translation. */}
+                {/* Player-typed text stays verbatim under UI translation.
+                    Player bubble = polarity flip (off-white fill, dark text);
+                    advisor bubble = darker canvas fill + hairline; error keeps
+                    its red tint (functional color). */}
                 <div data-no-translate={msg.role === "user" || asWritten ? "" : undefined} dir={asWritten ? chatDir : undefined} style={{
                     maxWidth: "90%", width: chartConfig ? "90%" : undefined,
                     padding: "0.6rem 0.85rem",
                     borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-                    backgroundColor: msg.role === "user" ? "#3b82f6" : msg.role === "error" ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.08)",
+                    backgroundColor: msg.role === "user" ? colors.primary : msg.role === "error" ? "rgba(239,68,68,0.2)" : colors.canvas,
+                    color: msg.role === "user" ? colors.onPrimary : undefined,
                     fontSize: "0.85rem", lineHeight: "1.5", whiteSpace: "pre-wrap", wordBreak: "break-word",
-                    border: msg.role === "error" ? "1px solid rgba(239,68,68,0.3)" : "none",
+                    border: msg.role === "error" ? "1px solid rgba(239,68,68,0.3)" : msg.role === "user" ? "none" : `1px solid ${colors.hairline}`,
                     boxSizing: "border-box",
                 }}>
                 {msg.role === "user" ? text : (
@@ -437,7 +445,7 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
                 {chartConfig && <AdvisorChart config={chartConfig} />}
                 </div>
                 {msg.time && msg.role !== "user" && (
-                    <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.3)", marginTop: "0.25rem" }}>
+                    <span style={{ fontSize: "0.65rem", color: colors.mute, marginTop: "0.25rem" }}>
                     {formatDate(msg.time)}
                     </span>
                 )}
@@ -447,8 +455,8 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
 
         {isLoading && !(messages[messages.length - 1]?.role === "advisor" && messages[messages.length - 1]?.streaming) && (
             <div style={{ display: "flex", alignItems: "flex-start", flexDirection: "column", gap: "0.25rem" }}>
-            <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)" }}>🧭 Advisor</span>
-            <div style={{ padding: "0.6rem 0.85rem", borderRadius: "12px 12px 12px 4px", backgroundColor: "rgba(255,255,255,0.08)", fontSize: "0.85rem" }}>
+            <span style={{ fontSize: "0.7rem", color: colors.mute }}>🧭 Advisor</span>
+            <div style={{ padding: "0.6rem 0.85rem", borderRadius: "12px 12px 12px 4px", backgroundColor: colors.canvas, border: `1px solid ${colors.hairline}`, fontSize: "0.85rem" }}>
             <ThinkingDots />
             </div>
             </div>
@@ -456,8 +464,9 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
         <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div style={{ padding: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        {/* Input — canvas-fill textarea + hairline; focus brightens the
+            border to full primary. Send = polarity-flip square button. */}
+        <div style={{ padding: "1rem", borderTop: `1px solid ${colors.hairline}`, display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <textarea
         ref={inputRef}
         placeholder="Ask your advisor…  (Shift+Enter for a new line)"
@@ -467,15 +476,13 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
             resizeTextarea();
         }}
         onKeyDown={handleKeyDown}
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "10px", color: "white", fontSize: "0.875rem", padding: "0.6rem 0.75rem", resize: "none", outline: "none", fontFamily: "sans-serif", lineHeight: "1.5", overflowY: "auto", scrollbarWidth: "none", transition: "border-color 0.2s" }}
-        onFocus={e => e.target.style.borderColor = "rgba(59,130,246,0.6)"}
-        onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.15)"}
+        style={{ flex: 1, backgroundColor: colors.canvas, border: `1px solid ${colors.hairline}`, borderRadius: rounded.sm, color: colors.primary, fontSize: "0.875rem", padding: "0.6rem 0.75rem", resize: "none", outline: "none", fontFamily: fonts.sans, lineHeight: "1.5", overflowY: "auto", scrollbarWidth: "none", transition: "border-color 0.2s" }}
+        onFocus={e => e.target.style.borderColor = colors.primary}
+        onBlur={e => e.target.style.borderColor = colors.hairline}
         />
         <button
         onClick={handleSend} disabled={isLoading || !input.trim()}
-        style={{ backgroundColor: isLoading || !input.trim() ? "rgba(59,130,246,0.4)" : "#3b82f6", border: "none", borderRadius: "10px", width: "2.5rem", height: "2.5rem", display: "flex", alignItems: "center", justifyContent: "center", cursor: isLoading || !input.trim() ? "not-allowed" : "pointer", flexShrink: 0, fontSize: "1rem", transition: "background-color 0.2s" }}
-        onMouseEnter={e => { if (!isLoading && input.trim()) e.currentTarget.style.backgroundColor = "#2563eb"; }}
-        onMouseLeave={e => { if (!isLoading && input.trim()) e.currentTarget.style.backgroundColor = "#3b82f6"; }}
+        style={{ backgroundColor: colors.primary, color: colors.onPrimary, border: "none", borderRadius: rounded.sm, width: "2.5rem", height: "2.5rem", display: "flex", alignItems: "center", justifyContent: "center", cursor: isLoading || !input.trim() ? "not-allowed" : "pointer", flexShrink: 0, fontSize: "1rem", opacity: isLoading || !input.trim() ? 0.45 : 1, transition: "opacity 0.2s" }}
         >🚀</button>
         </div>
         </div>
@@ -484,17 +491,19 @@ const AdvisorPanel = ({ isAdvisorOpen, onClose, width, onResize }) => {
     );
 };
 
+// Markdown chrome follows the design language: code blocks sit on the page
+// canvas, blockquotes take a hairline rule (no chromatic accent).
 const markdownStyles = `
 .advisor-markdown p { margin: 0 0 0.5rem 0; }
 .advisor-markdown p:last-child { margin-bottom: 0; }
 .advisor-markdown ul, .advisor-markdown ol { margin: 0.25rem 0 0.5rem 1.25rem; padding: 0; }
 .advisor-markdown li { margin-bottom: 0.2rem; }
-.advisor-markdown strong { color: rgba(255,255,255,0.95); }
-.advisor-markdown em { color: rgba(255,255,255,0.75); }
-.advisor-markdown code { background: rgba(0,0,0,0.3); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8rem; }
-.advisor-markdown pre { background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px; overflow-x: auto; margin: 0.5rem 0; }
-.advisor-markdown h1, .advisor-markdown h2, .advisor-markdown h3 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
-.advisor-markdown blockquote { border-left: 2px solid rgba(59,130,246,0.6); margin: 0.5rem 0; padding-left: 0.75rem; color: rgba(255,255,255,0.6); }
+.advisor-markdown strong { color: ${colors.primary}; }
+.advisor-markdown em { color: ${colors.body}; }
+.advisor-markdown code { background: ${colors.canvas}; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8rem; font-family: ${fonts.mono}; }
+.advisor-markdown pre { background: ${colors.canvas}; border: 1px solid ${colors.hairline}; padding: 0.75rem; border-radius: 6px; overflow-x: auto; margin: 0.5rem 0; font-family: ${fonts.mono}; }
+.advisor-markdown h1, .advisor-markdown h2, .advisor-markdown h3 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; color: ${colors.bodyStrong}; }
+.advisor-markdown blockquote { border-left: 2px solid ${colors.hairline}; margin: 0.5rem 0; padding-left: 0.75rem; color: ${colors.mute}; }
 `;
 
 const MarkdownStyleInjector = () => {

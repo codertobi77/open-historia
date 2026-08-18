@@ -41,6 +41,7 @@ import {
   embedScenarioBundleVector,
 } from "../../runtime/communityBasemaps.js";
 import { zipBundle, unzipBundle, looksLikeZip } from "../../runtime/bundleZip.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 const UNIT_TYPE_LABELS = {
   infantry: "Infantry",
@@ -105,23 +106,28 @@ export const isMainMenuOpen = () => menuOpenDefault;
 // widget, forces panel, editor drawer) starts at the screen edge.
 const TOP_BAR_OFFSET = "0.5rem";
 
+// Design-system chrome (DESIGN.md / src/design/tokens.js): solid warm
+// canvas-soft surface + hairline, no gradient/blur/shadow. Cards (scenario /
+// game) spread this and then add their own accent-colored border for the
+// selected state.
 const surfaceStyle = {
-  background:
-    "linear-gradient(180deg, rgba(8, 10, 17, 0.97) 0%, rgba(8, 10, 15, 0.94) 100%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
-  backdropFilter: "blur(18px)",
-  WebkitBackdropFilter: "blur(18px)",
+  backgroundColor: colors.canvasSoft,
+  border: `1px solid ${colors.hairline}`,
 };
 
+// Pill-shaped action buttons are a deliberate exception here: the library menu
+// is brand chrome (the landing-page-adjacent main menu), and pills are its
+// established voice. The spec exempts status pills at rounded.full; these
+// match that spirit.
 const actionButtonStyle = {
   alignItems: "center",
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: "999px",
-  color: "rgba(244,246,255,0.92)",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.full,
+  color: colors.primary,
   cursor: "pointer",
   display: "inline-flex",
+  fontFamily: fonts.sans,
   fontSize: "0.82rem",
   fontWeight: 600,
   gap: "0.4rem",
@@ -132,8 +138,9 @@ const actionButtonStyle = {
 };
 
 const fieldLabelStyle = {
-  color: "rgba(255,255,255,0.72)",
+  color: colors.bodyStrong,
   display: "block",
+  fontFamily: fonts.sans,
   fontSize: "0.75rem",
   fontWeight: 600,
   letterSpacing: "0.04em",
@@ -142,10 +149,11 @@ const fieldLabelStyle = {
 };
 
 const inputStyle = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "12px",
-  color: "#f8fafc",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.sm,
+  color: colors.primary,
+  fontFamily: fonts.sans,
   fontSize: "0.9rem",
   outline: "none",
   padding: "0.8rem 0.9rem",

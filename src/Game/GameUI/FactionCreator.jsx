@@ -8,6 +8,7 @@
 
 import { lazy, Suspense, useState } from "react";
 import { createPortal } from "react-dom";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 // The editor's flag picker drops in unchanged — it is prop-driven and pulls in no
 // editor stores. It returns a flag STRING (a flagcdn URL or a PNG data URL) or
@@ -15,13 +16,18 @@ import { createPortal } from "react-dom";
 const CountryPickerMap = lazy(() => import("./CountryPickerMap.jsx"));
 const FlagPicker = lazy(() => import("../../Editor/FlagPicker.jsx"));
 
-const label = { color: "rgba(255,255,255,0.7)", fontSize: "0.78rem", fontWeight: 700, margin: "0.1rem 0 0.3rem" };
+// Design tokens (DESIGN.md / tokens.js): labels are bodyStrong caption text,
+// fields use the canvas fill + hairline input convention, and the active pill
+// is the polarity flip (off-white fill + dark text) — the legacy purple pill
+// chrome is gone. The faction's own default COLOUR (#7c3aed below) is map data,
+// not chrome, and stays.
+const label = { color: colors.bodyStrong, fontSize: "0.78rem", fontWeight: 600, margin: "0.1rem 0 0.3rem" };
 const field = {
-  background: "rgba(0,0,0,0.28)",
-  border: "1px solid rgba(255,255,255,0.16)",
-  borderRadius: 8,
-  color: "#fff",
-  fontFamily: "sans-serif",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.sm,
+  color: colors.ink,
+  fontFamily: fonts.sans,
   fontSize: "0.85rem",
   outline: "none",
   padding: "0.55rem 0.7rem",
@@ -29,13 +35,13 @@ const field = {
   boxSizing: "border-box",
 };
 const pill = (active) => ({
-  background: active ? "rgba(124,58,237,0.28)" : "rgba(255,255,255,0.06)",
-  border: `1px solid ${active ? "rgba(124,58,237,0.7)" : "rgba(255,255,255,0.1)"}`,
-  borderRadius: 999,
-  color: "#fff",
+  background: active ? colors.primary : colors.canvas,
+  border: `1px solid ${active ? colors.primary : colors.hairline}`,
+  borderRadius: rounded.sm,
+  color: active ? colors.onPrimary : colors.body,
   cursor: "pointer",
   fontSize: "0.8rem",
-  fontWeight: 700,
+  fontWeight: 600,
   padding: "0.35rem 0.85rem",
 });
 
@@ -93,14 +99,14 @@ const FactionCreator = ({ regionsGeojson, onCreate, onCancel, busy }) => {
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            style={{ width: 48, height: 34, background: "none", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 8, cursor: "pointer" }}
+            style={{ width: 48, height: 34, background: "none", border: `1px solid ${colors.hairline}`, borderRadius: rounded.sm, cursor: "pointer" }}
           />
         </div>
         <div style={{ flex: 1 }}>
           <div style={label}>Flag</div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             {flag ? (
-              <img src={flag} alt="" style={{ width: 34, height: 22, objectFit: "contain", borderRadius: 3, border: "1px solid rgba(255,255,255,0.25)" }} />
+              <img src={flag} alt="" style={{ width: 34, height: 22, objectFit: "contain", borderRadius: 3, border: `1px solid ${colors.hairline}` }} />
             ) : (
               <span aria-hidden="true" style={{ fontSize: "1.4rem" }}>🏳️</span>
             )}
@@ -132,16 +138,16 @@ const FactionCreator = ({ regionsGeojson, onCreate, onCancel, busy }) => {
           <button type="button" onClick={() => setLandless(false)} style={pill(!landless)}>Claim regions</button>
         </div>
         {landless ? (
-          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.76rem" }}>
+          <div style={{ color: colors.mute, fontSize: "0.76rem" }}>
             You begin with no territory — a stateless power. Your campaign is to gain
             or retake land.
           </div>
         ) : (
           <>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.76rem", marginBottom: "0.3rem" }}>
+            <div style={{ color: colors.mute, fontSize: "0.76rem", marginBottom: "0.3rem" }}>
               {regionIds.size} region{regionIds.size === 1 ? "" : "s"} claimed
             </div>
-            <Suspense fallback={<div style={{ color: "rgba(255,255,255,0.5)", padding: "2rem 0", textAlign: "center" }}>Loading map…</div>}>
+            <Suspense fallback={<div style={{ color: colors.mute, padding: "2rem 0", textAlign: "center" }}>Loading map…</div>}>
               <CountryPickerMap
                 countryOptions={[]}
                 onPickCountry={() => {}}
@@ -174,14 +180,14 @@ const FactionCreator = ({ regionsGeojson, onCreate, onCancel, busy }) => {
         <button type="button" onClick={onCancel} style={{ ...pill(false), padding: "0.55rem 1rem" }}>Cancel</button>
       </div>
 
-      {/* Portalled to <body>, exactly as the editor mounts it outside its own
-          backdrop-filtered panel. Two things trap it otherwise: the new-game modal
-          card has backdrop-filter, which makes a containing block for position:fixed
-          — so the picker's full-screen overlay resolves to the card's box, not the
-          viewport, and its top is cut off (its own comment documents this). And the
-          picker's overlay is z-index 130 while the modal is 10060, so even freed it
-          would sit behind. The portal escapes the containing block; the wrapper's
-          stacking context (above the modal) lifts it in front. */}
+      {/* Portalled to <body>, exactly as the editor mounts it outside its panels.
+          The picker's full-screen overlay is z-index 130 while the new-game modal
+          is 10060, so rendered inside the card it would sit behind it; the portal
+          escapes the modal's stacking context and the wrapper's own context
+          (10070, above the modal) lifts it in front. (The modal card's surface
+          no longer carries backdrop-filter since the token migration, but keeping
+          the picker out of it also guards against any future containing-block
+          property — transform/filter/etc. — trapping position:fixed again.) */}
       {flagOpen && createPortal(
         <Suspense fallback={null}>
           <div style={{ position: "relative", zIndex: 10070 }}>

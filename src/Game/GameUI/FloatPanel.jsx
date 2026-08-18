@@ -1,6 +1,9 @@
 /*! Open Historia — portions (draggable/resizable panel wrapper) © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../runtime/useIsMobile.js";
+// Design tokens (DESIGN.md / tokens.js): warm canvas-soft surface + hairline
+// replaces the legacy glass chrome (rgba/blur/shadow, 16px radius, blue accents).
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 // A reusable fixed-position panel you can drag by its header and resize from its
 // bottom-right corner. Geometry (x/y/w/h) is persisted to localStorage and
@@ -174,14 +177,16 @@ const FloatPanel = ({
   }
 
   const headerVisible = Boolean(title || onClose);
+  // Warm canvas-soft surface + 1px hairline, no blur/shadow. Token-driven chrome
+  // (DESIGN.md: elevation = surface contrast + hairlines, not glass + shadows).
+  // Callers may still override anything via surfaceStyle for panel-specific needs;
+  // the defaults here establish the shared FloatPanel identity.
   const mergedSurface = {
-    backgroundColor: "rgba(17, 24, 39, 0.95)",
-    backdropFilter: "blur(8px)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "16px",
-    boxShadow: "-4px 0 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
-    color: "white",
-    fontFamily: "sans-serif",
+    backgroundColor: colors.canvasSoft,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: `${rounded.md}px`,
+    color: colors.ink,
+    fontFamily: fonts.sans,
     ...surfaceStyle,
   };
 
@@ -210,17 +215,17 @@ const FloatPanel = ({
             justifyContent: "space-between",
             height: HEADER_HEIGHT,
             padding: "0 0.75rem",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            borderBottom: `1px solid ${colors.hairline}`,
             cursor: dragEnabled ? "grab" : "default",
             flexShrink: 0,
             userSelect: "none",
             touchAction: "none",
           }}
         >
-          <span style={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "baseline", gap: "0.45rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "baseline", gap: "0.45rem", color: colors.ink }}>
             {title || ""}
             {subtitle && (
-              <span style={{ fontSize: "0.72rem", fontWeight: 500, color: "rgba(255,255,255,0.5)", letterSpacing: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "0.72rem", fontWeight: 500, color: colors.mute, letterSpacing: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {subtitle}
               </span>
             )}
@@ -233,16 +238,16 @@ const FloatPanel = ({
               style={{
                 background: "none",
                 border: "none",
-                borderRadius: "6px",
-                color: "rgba(255,255,255,0.5)",
+                borderRadius: `${rounded.sm}px`,
+                color: colors.mute,
                 cursor: "pointer",
                 fontSize: "1.05rem",
                 lineHeight: 1,
                 padding: "0.15rem 0.35rem",
                 flexShrink: 0,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "none"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = colors.primary; e.currentTarget.style.background = colors.canvas; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = colors.mute; e.currentTarget.style.background = "none"; }}
               onPointerDown={(e) => e.stopPropagation()}
             >
               {"\u2715"}
@@ -266,10 +271,10 @@ const FloatPanel = ({
             cursor: "nwse-resize",
             touchAction: "none",
             // A subtle corner grip drawn with two L borders.
-            borderBottomRightRadius: "16px",
+            borderBottomRightRadius: `${rounded.md}px`,
           }}
         >
-          <span style={{ position: "absolute", right: "0.3rem", bottom: "0.2rem", width: "0.55rem", height: "0.55rem", borderBottom: "2px solid rgba(255,255,255,0.25)", borderRight: "2px solid rgba(255,255,255,0.25)" }} />
+          <span style={{ position: "absolute", right: "0.3rem", bottom: "0.2rem", width: "0.55rem", height: "0.55rem", borderBottom: `2px solid ${colors.hairline}`, borderRight: `2px solid ${colors.hairline}` }} />
         </div>
       )}
     </div>

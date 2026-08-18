@@ -7,6 +7,7 @@ import { resolveCountryTags } from "../../runtime/countryTags.js";
 import { readEventsState, readWorldState } from "../../runtime/gameState.js";
 import { requestDiplomaticChat } from "../GameUI/chat.jsx";
 import { generateCountryStats } from "../AI/gameplay.js";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 // Bridge: the region popup's info button opens this panel from outside React.
 let _openPanel = null;
@@ -21,20 +22,22 @@ const FILTER_MODES = [
     { id: "minor", label: "Minor" },
 ];
 
+// Tokenized chrome: warm canvas-soft surface + hairline, no blur/shadow
+// (DESIGN.md). The community-hub purple on the Diplomacy CTA and tag pills is
+// a functional-identity exemption, same as the Community hub itself.
 const surface = {
-    backgroundColor: "rgba(17, 24, 39, 0.97)",
-    backdropFilter: "blur(8px)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "16px",
-    boxShadow: "-4px 0 24px rgba(0,0,0,0.45)",
-    color: "white",
-    fontFamily: "sans-serif",
+    backgroundColor: colors.canvasSoft,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: rounded.lg,
+    color: colors.ink,
+    fontFamily: fonts.sans,
 };
 
+// Status pills — full radius is sanctioned for pills.
 const pillStyle = {
-    border: "1px solid rgba(255,255,255,0.35)",
-    borderRadius: "999px",
-    color: "rgba(255,255,255,0.92)",
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: rounded.full,
+    color: colors.bodyStrong,
     display: "inline-block",
     fontSize: "0.74rem",
     fontWeight: 600,
@@ -43,15 +46,15 @@ const pillStyle = {
 
 const footerButtonStyle = {
     alignItems: "center",
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.16)",
-    borderRadius: "999px",
-    color: "white",
+    background: colors.canvas,
+    border: `1px solid ${colors.hairline}`,
+    borderRadius: rounded.sm,
+    color: colors.ink,
     cursor: "pointer",
     display: "flex",
     flex: 1,
     fontSize: "0.88rem",
-    fontWeight: 700,
+    fontWeight: 600,
     justifyContent: "center",
     padding: "0.7rem 0.9rem",
 };
@@ -182,13 +185,13 @@ const CountryInfoPanel = () => {
         ) : country.flagEmoji ? (
             <span style={{ fontSize: "1.3rem" }}>{country.flagEmoji}</span>
         ) : null}
-        <span style={{ flex: 1, fontSize: "1.15rem", fontWeight: 800, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ flex: 1, fontSize: "1.15rem", fontWeight: 600, letterSpacing: "-0.3px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {country.name}
         </span>
         <button
         type="button"
         onClick={() => setCountry(null)}
-        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: "1.15rem", lineHeight: 1, padding: "0.2rem" }}
+        style={{ background: "none", border: "none", color: colors.mute, cursor: "pointer", fontSize: "1.15rem", lineHeight: 1, padding: "0.2rem" }}
         >
         {"✕"}
         </button>
@@ -197,40 +200,40 @@ const CountryInfoPanel = () => {
         {/* Body */}
         <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: "0.4rem", minHeight: 0, overflowY: "auto", padding: "0 1.1rem 1rem", scrollbarWidth: "thin" }}>
         <div style={{ alignItems: "baseline", display: "flex", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "1rem", fontWeight: 800 }}>Related Events</div>
-        <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.75rem" }}>{filteredEvents.length} shown</div>
+        <div style={{ fontSize: "1rem", fontWeight: 600, letterSpacing: "-0.2px" }}>Related Events</div>
+        <div style={{ color: colors.mute, fontSize: "0.75rem" }}>{filteredEvents.length} shown</div>
         </div>
         <div style={{ display: "flex", gap: "0.45rem" }}>
         <input
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         placeholder="Search events..."
-        style={{ background: "rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, color: "white", flex: 1, fontSize: "0.82rem", outline: "none", padding: "0.55rem 0.7rem" }}
+        style={{ background: colors.canvas, border: `1px solid ${colors.hairline}`, borderRadius: rounded.sm, color: colors.ink, flex: 1, fontSize: "0.82rem", outline: "none", padding: "0.55rem 0.7rem" }}
         />
         <button
         type="button"
         onClick={() => setFilterIndex((filterIndex + 1) % FILTER_MODES.length)}
         title="Filter by importance"
-        style={{ ...footerButtonStyle, borderRadius: 8, flex: "none", fontSize: "0.78rem", padding: "0.45rem 0.7rem" }}
+        style={{ ...footerButtonStyle, flex: "none", fontSize: "0.78rem", padding: "0.45rem 0.7rem" }}
         >
         {"ⱶ"} {FILTER_MODES[filterIndex].id === "all" ? "Filters" : FILTER_MODES[filterIndex].label}
         </button>
         </div>
 
         {filteredEvents.length === 0 ? (
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", padding: "0.3rem 0 0.4rem" }}>
+            <div style={{ color: colors.mute, fontSize: "0.8rem", padding: "0.3rem 0 0.4rem" }}>
             No events found for this country.
             </div>
         ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", padding: "0.2rem 0 0.4rem" }}>
             {filteredEvents.slice(0, 30).map((event) => (
-                <div key={event.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0.55rem 0.7rem" }}>
+                <div key={event.id} style={{ background: colors.canvas, border: `1px solid ${colors.hairline}`, borderRadius: rounded.md, padding: "0.55rem 0.7rem" }}>
                 <div style={{ alignItems: "baseline", display: "flex", gap: "0.5rem", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "0.82rem", fontWeight: 700 }}>{event.title}</span>
-                <span style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0, fontSize: "0.68rem" }}>{event.date}</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>{event.title}</span>
+                <span style={{ color: colors.mute, flexShrink: 0, fontSize: "0.68rem" }}>{event.date}</span>
                 </div>
                 {event.description && (
-                    <div style={{ color: "rgba(255,255,255,0.62)", fontSize: "0.74rem", lineHeight: 1.5, marginTop: "0.2rem" }}>
+                    <div style={{ color: colors.body, fontSize: "0.74rem", lineHeight: 1.5, marginTop: "0.2rem" }}>
                     {String(event.description).length > 220 ? `${String(event.description).slice(0, 220)}…` : event.description}
                     </div>
                 )}
@@ -253,12 +256,12 @@ const CountryInfoPanel = () => {
             </div>
         )}
 
-        <div style={{ fontSize: "1rem", fontWeight: 800, marginTop: "0.5rem" }}>Details</div>
+        <div style={{ fontSize: "1rem", fontWeight: 600, letterSpacing: "-0.2px", marginTop: "0.5rem" }}>Details</div>
         <div style={{ display: "grid", gap: "0.8rem", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.4fr)" }}>
         <div>
-        <div style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: "0.35rem" }}>Alternative Names</div>
+        <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.35rem" }}>Alternative Names</div>
         {aliases.length === 0 ? (
-            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.78rem" }}>None</div>
+            <div style={{ color: colors.mute, fontSize: "0.78rem" }}>None</div>
         ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
             {aliases.map((alias) => (
@@ -268,9 +271,9 @@ const CountryInfoPanel = () => {
         )}
         </div>
         <div>
-        <div style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: "0.35rem" }}>Regions Owned ({regions.length})</div>
+        <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.35rem" }}>Regions Owned ({regions.length})</div>
         {regions.length === 0 ? (
-            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.78rem" }}>None</div>
+            <div style={{ color: colors.mute, fontSize: "0.78rem" }}>None</div>
         ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
             {regions.slice(0, 80).map((regionName) => (
@@ -283,14 +286,15 @@ const CountryInfoPanel = () => {
         </div>
 
         {report !== null && (
-            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, marginTop: "0.6rem", padding: "0.7rem 0.8rem" }}>
-            <div style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: "0.3rem" }}>Advisor Report</div>
+            <div style={{ background: colors.canvas, border: `1px solid ${colors.hairline}`, borderRadius: rounded.md, marginTop: "0.6rem", padding: "0.7rem 0.8rem" }}>
+            <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Advisor Report</div>
             {report === "loading" ? (
-                <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.78rem" }}>Preparing the report…</div>
+                <div style={{ color: colors.mute, fontSize: "0.78rem" }}>Preparing the report…</div>
             ) : report?.error ? (
+                // Error red is a functional/semantic color, not brand chrome.
                 <div style={{ color: "#f87171", fontSize: "0.78rem" }}>{report.error}</div>
             ) : (
-                <div className="timeline-markdown" style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.79rem", lineHeight: 1.55 }}>
+                <div className="timeline-markdown" style={{ color: colors.bodyStrong, fontSize: "0.79rem", lineHeight: 1.55 }}>
                 <ReactMarkdown>{String(report)}</ReactMarkdown>
                 </div>
             )}
@@ -299,7 +303,7 @@ const CountryInfoPanel = () => {
         </div>
 
         {/* Footer */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "0.6rem", padding: "0.8rem 1.1rem" }}>
+        <div style={{ borderTop: `1px solid ${colors.hairline}`, display: "flex", gap: "0.6rem", padding: "0.8rem 1.1rem" }}>
         <button type="button" onClick={runAdvisorReport} style={footerButtonStyle}>
         Advisor Report
         </button>

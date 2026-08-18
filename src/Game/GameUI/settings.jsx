@@ -1,5 +1,7 @@
 /*! Open Historia — portions (reasoning toggle + small-screen menu) © 2026 Nicholas Krol, MIT (see src/Editor/LICENSE). */
 import React, { useEffect, useState } from "react";
+// Design tokens (DESIGN.md / tokens.js) replace legacy glass chrome and blue accents.
+import { colors, fonts, rounded } from "../../design/tokens.js";
 import {
     DEFAULT_PROVIDER,
     PROVIDER_OPTIONS,
@@ -23,34 +25,32 @@ import ModelPicker from "./ModelPicker.jsx";
 
 const baseStyle = {
     position: "fixed",
-    backgroundColor: "rgba(17, 24, 39, 0.9)",
-    backdropFilter: "blur(4px)",
+    backgroundColor: colors.canvasSoft,
     zIndex: 9999,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "white",
-    fontFamily: "sans-serif",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
+    color: colors.ink,
+    fontFamily: fonts.sans,
+    borderRadius: `${rounded.md}px`,
+    border: `1px solid ${colors.hairline}`,
 };
 
 const labelStyle = {
     display: "block",
     fontSize: "0.82rem",
     marginBottom: "0.45rem",
-    color: "rgba(255,255,255,0.92)",
+    color: colors.bodyStrong,
     cursor: "text",
 };
 
 const inputStyle = {
     width: "100%",
     padding: "0.65rem 0.7rem",
-    borderRadius: "8px",
-    border: "1px solid rgba(255,255,255,0.16)",
-    backgroundColor: "rgba(0,0,0,0.22)",
-    color: "white",
+    borderRadius: `${rounded.sm}px`,
+    border: `1px solid ${colors.hairline}`,
+    backgroundColor: colors.canvas,
+    color: colors.ink,
     fontSize: "0.85rem",
     outline: "none",
     boxSizing: "border-box",
@@ -60,7 +60,7 @@ const inputStyle = {
 const helperStyle = {
     marginTop: "0.35rem",
     fontSize: "0.74rem",
-    color: "rgba(255,255,255,0.58)",
+    color: colors.mute,
     lineHeight: 1.45,
 };
 
@@ -206,12 +206,12 @@ const Toggle = ({ label, enabled, onToggle }) => (
     style={{
         width: "3.5rem",
         height: "1.75rem",
-        borderRadius: "1rem",
-        border: "none",
+        borderRadius: `${rounded.full}px`,
+        border: `1px solid ${colors.hairline}`,
         cursor: "pointer",
         position: "relative",
         transition: "0.3s",
-        backgroundColor: enabled ? "#3b82f6" : "#4b5563",
+        backgroundColor: enabled ? colors.primary : colors.canvas,
     }}
     >
     <div
@@ -221,10 +221,9 @@ const Toggle = ({ label, enabled, onToggle }) => (
         left: enabled ? "1.8rem" : "2px",
         width: "1.5rem",
         height: "1.5rem",
-        backgroundColor: "white",
+        backgroundColor: enabled ? colors.onPrimary : colors.mute,
         borderRadius: "50%",
         transition: "0.3s",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
         pointerEvents: "none",
     }}
     />
@@ -253,7 +252,7 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
 
     return (
         <div style={{ marginBottom: "1rem" }}>
-        <label style={{ display: "block", fontSize: "0.9rem", marginBottom: "0.6rem", color: "white" }}>
+        <label style={{ display: "block", fontSize: "0.9rem", marginBottom: "0.6rem", color: colors.ink }}>
         AI Provider
         </label>
 
@@ -262,10 +261,10 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
         style={{
             width: "100%",
             padding: "0.8rem 0.9rem",
-            borderRadius: "10px",
-            border: "1px solid rgba(255,255,255,0.12)",
-            backgroundColor: "rgba(0,0,0,0.18)",
-            color: "white",
+            borderRadius: `${rounded.sm}px`,
+            border: `1px solid ${colors.hairline}`,
+            backgroundColor: colors.canvas,
+            color: colors.ink,
             cursor: "pointer",
             textAlign: "left",
         }}
@@ -275,11 +274,11 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
         <div style={{ fontSize: "0.9rem", fontWeight: 700 }}>
         {selectedProvider.label}
         </div>
-        <div style={{ marginTop: "0.2rem", fontSize: "0.72rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.45 }}>
+        <div style={{ marginTop: "0.2rem", fontSize: "0.72rem", color: colors.mute, lineHeight: 1.45 }}>
         {selectedProvider.group} · {selectedProvider.description}
         </div>
         </div>
-        <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.7)" }}>
+        <div style={{ fontSize: "0.85rem", color: colors.body }}>
         {isCatalogOpen ? "Hide" : "Change"}
         </div>
         </div>
@@ -294,9 +293,9 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
             style={{
                 marginTop: "0.7rem",
                 padding: "0.75rem",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backgroundColor: "rgba(255,255,255,0.04)",
+                borderRadius: `${rounded.sm}px`,
+                border: `1px solid ${colors.hairline}`,
+                backgroundColor: colors.canvas,
             }}
             >
             <input
@@ -315,7 +314,7 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
             <div style={{ maxHeight: "12rem", overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "0.7rem" }}>
             {groupedProviders.length > 0 ? groupedProviders.map((group) => (
                 <div key={group.name}>
-                <div style={{ marginBottom: "0.35rem", fontSize: "0.68rem", fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                <div style={{ marginBottom: "0.35rem", fontSize: "0.68rem", fontWeight: 700, color: colors.mute, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 {group.name}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -329,11 +328,10 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
                         style={{
                             width: "100%",
                             padding: "0.7rem 0.75rem",
-                            borderRadius: "8px",
-                            border: "1px solid",
-                            borderColor: selected ? "rgba(59,130,246,0.8)" : "rgba(255,255,255,0.08)",
-                            backgroundColor: selected ? "rgba(59,130,246,0.18)" : "rgba(0,0,0,0.16)",
-                            color: "white",
+                            borderRadius: `${rounded.sm}px`,
+                            border: `1px solid ${selected ? colors.primary : colors.hairline}`,
+                            backgroundColor: selected ? colors.primary : colors.canvas,
+                            color: selected ? colors.onPrimary : colors.ink,
                             cursor: "pointer",
                             textAlign: "left",
                         }}
@@ -343,12 +341,12 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
                         {option.label}
                         </span>
                         {selected && (
-                            <span style={{ fontSize: "0.68rem", color: "#93c5fd", fontWeight: 700 }}>
+                            <span style={{ fontSize: "0.68rem", color: colors.onPrimary, fontWeight: 700, textTransform: "uppercase" }}>
                             Active
                             </span>
                         )}
                         </div>
-                        <div style={{ marginTop: "0.18rem", fontSize: "0.72rem", lineHeight: 1.4, color: "rgba(255,255,255,0.6)" }}>
+                        <div style={{ marginTop: "0.18rem", fontSize: "0.72rem", lineHeight: 1.4, color: selected ? colors.onPrimary : colors.body }}>
                         {option.description}
                         </div>
                         </button>
@@ -389,7 +387,7 @@ const SettingsInput = ({
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
-        style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }}
+        style={{ ...inputStyle, fontFamily: fonts.mono, resize: "vertical" }}
         />
     ) : (
         <input
@@ -425,12 +423,12 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
         style={{
             marginBottom: "1rem",
             padding: "0.85rem",
-            borderRadius: "10px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            backgroundColor: "rgba(255,255,255,0.04)",
+            borderRadius: `${rounded.sm}px`,
+            border: `1px solid ${colors.hairline}`,
+            backgroundColor: colors.canvas,
         }}
         >
-        <div style={{ fontSize: "0.84rem", fontWeight: 700, marginBottom: "0.25rem" }}>
+        <div style={{ fontSize: "0.84rem", fontWeight: 700, marginBottom: "0.25rem", color: colors.ink }}>
         {meta.label} Settings
         </div>
         <div style={{ ...helperStyle, marginTop: 0, marginBottom: "0.85rem" }}>
@@ -696,7 +694,7 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
         gap: "0.5rem",
         marginTop: "0.25rem",
         paddingTop: "1rem",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
+        borderTop: `1px solid ${colors.hairline}`,
     }}
     >
     {discordUrl && (
@@ -712,8 +710,8 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
             justifyContent: "center",
             gap: "0.4rem",
             padding: "0.5rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: `${rounded.sm}px`,
+            border: "1px solid rgba(88, 101, 242, 0.4)",
             backgroundColor: "rgba(88, 101, 242, 0.2)",
             color: "white",
             textDecoration: "none",
@@ -728,7 +726,7 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
         }}
         onMouseLeave={(event) => {
             event.currentTarget.style.backgroundColor = "rgba(88, 101, 242, 0.2)";
-            event.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+            event.currentTarget.style.borderColor = "rgba(88, 101, 242, 0.4)";
         }}
         >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -750,8 +748,8 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
             justifyContent: "center",
             gap: "0.4rem",
             padding: "0.5rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: `${rounded.sm}px`,
+            border: "1px solid rgba(255, 69, 0, 0.4)",
             backgroundColor: "rgba(255, 69, 0, 0.2)",
             color: "white",
             textDecoration: "none",
@@ -766,7 +764,7 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
         }}
         onMouseLeave={(event) => {
             event.currentTarget.style.backgroundColor = "rgba(255, 69, 0, 0.2)";
-            event.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+            event.currentTarget.style.borderColor = "rgba(255, 69, 0, 0.4)";
         }}
         >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -788,10 +786,10 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
             justifyContent: "center",
             gap: "0.4rem",
             padding: "0.5rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            backgroundColor: "rgba(255,255,255,0.07)",
-            color: "white",
+            borderRadius: `${rounded.sm}px`,
+            border: `1px solid ${colors.hairline}`,
+            backgroundColor: colors.canvas,
+            color: colors.ink,
             textDecoration: "none",
             fontSize: "0.8rem",
             fontWeight: 500,
@@ -799,12 +797,12 @@ const SocialLinks = ({ discordUrl, redditUrl, githubUrl }) => (
             cursor: "pointer",
         }}
         onMouseEnter={(event) => {
-            event.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)";
-            event.currentTarget.style.borderColor = "rgba(255,255,255,0.3)";
+            event.currentTarget.style.backgroundColor = colors.canvasSoft;
+            event.currentTarget.style.borderColor = colors.mute;
         }}
         onMouseLeave={(event) => {
-            event.currentTarget.style.backgroundColor = "rgba(255,255,255,0.07)";
-            event.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+            event.currentTarget.style.backgroundColor = colors.canvas;
+            event.currentTarget.style.borderColor = colors.hairline;
         }}
         >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -889,8 +887,10 @@ const SettingsMenu = ({
             margin: "0 -1rem 1rem -1rem",
             padding: "0 1rem 1rem 1rem",
             fontSize: "1.1rem",
+            fontWeight: 700,
             textAlign: "left",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            color: colors.ink,
+            borderBottom: `1px solid ${colors.hairline}`,
         }}
         >
         Game Settings
@@ -917,7 +917,7 @@ const SettingsMenu = ({
         style={{
             backgroundColor: "rgba(245,158,11,0.16)",
             border: "1px solid rgba(245,158,11,0.45)",
-            borderRadius: "999px",
+            borderRadius: `${rounded.full}px`,
             color: "#fbbf24",
             fontSize: "0.66rem",
             fontWeight: 700,
@@ -929,8 +929,8 @@ const SettingsMenu = ({
         </span>
         </div>
         <Toggle label="3D Terrain" enabled={isTerrainEnabled} onToggle={onToggleTerrain} />
-        <div style={{ margin: "0.5rem 0 1rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-        <div style={{ fontSize: "0.84rem", fontWeight: 700, marginBottom: "0.6rem" }}>Map</div>
+        <div style={{ margin: "0.5rem 0 1rem", paddingTop: "0.75rem", borderTop: `1px solid ${colors.hairline}` }}>
+        <div style={{ fontSize: "0.84rem", fontWeight: 700, marginBottom: "0.6rem", color: colors.bodyStrong }}>Map</div>
         <Toggle
         label="Hide country labels"
         enabled={mapSettings.hideCountryLabels}
@@ -960,14 +960,14 @@ const SettingsMenu = ({
         />
         </div>
 
-        <div style={{ margin: "0.5rem 0 1rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-        <div style={{ fontSize: "0.84rem", fontWeight: 700, marginBottom: "0.6rem" }}>AI</div>
+        <div style={{ margin: "0.5rem 0 1rem", paddingTop: "0.75rem", borderTop: `1px solid ${colors.hairline}` }}>
+        <div style={{ fontSize: "0.84rem", fontWeight: 700, marginBottom: "0.6rem", color: colors.bodyStrong }}>AI</div>
         <Toggle
         label="Limit AI generation"
         enabled={mapSettings.limitAiGeneration}
         onToggle={() => updateMapSetting("limitAiGeneration", MAP_SETTING_KEYS.limitAiGeneration, !mapSettings.limitAiGeneration)}
         />
-        <div style={{ marginTop: "-0.7rem", marginBottom: "0.4rem", fontSize: "0.72rem", color: "rgba(255,255,255,0.45)", lineHeight: 1.35 }}>
+        <div style={{ marginTop: "-0.7rem", marginBottom: "0.4rem", fontSize: "0.72rem", color: colors.mute, lineHeight: 1.35 }}>
         On: time skips give the model 5 minutes, then fall back to canned events. Off (default): generation waits as long as the model needs. Cancel works either way.
         </div>
         </div>
@@ -978,10 +978,10 @@ const SettingsMenu = ({
             onClick={onOpenCheats}
             style={{
                 alignItems: "center",
-                background: "rgba(124,58,237,0.22)",
-                border: "1px solid rgba(139,92,246,0.45)",
-                borderRadius: "8px",
-                color: "white",
+                background: colors.canvas,
+                border: `1px solid ${colors.hairline}`,
+                borderRadius: `${rounded.sm}px`,
+                color: colors.ink,
                 cursor: "pointer",
                 display: "flex",
                 fontSize: "0.9rem",
@@ -1001,10 +1001,10 @@ const SettingsMenu = ({
         href="/guides/"
         style={{
             alignItems: "center",
-            background: "rgba(59,130,246,0.18)",
-            border: "1px solid rgba(96,165,250,0.4)",
-            borderRadius: "8px",
-            color: "white",
+            background: colors.primary,
+            border: "none",
+            borderRadius: `${rounded.sm}px`,
+            color: colors.onPrimary,
             cursor: "pointer",
             display: "flex",
             fontSize: "0.9rem",

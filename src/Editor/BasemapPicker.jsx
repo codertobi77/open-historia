@@ -13,13 +13,16 @@ import { EDITOR_BASEMAPS, esriPreviewUrl } from "./basemaps.js";
 import { BACKGROUND_ACCEPT } from "./customBackground.js";
 import { listBasemaps, deleteBasemap as deleteBasemapApi, getBasemapPayload } from "../runtime/basemapLibrary.js";
 import { basemapPostInstallable, fetchCommunityBasemaps, installCommunityBasemap, publishBasemap } from "../runtime/communityBasemaps.js";
+import { colors, rounded } from "../design/tokens.js";
 
+// Chrome is tokenized (warm canvas-soft + hairlines, no blur/shadow). The
+// community-hub purple #7c3aed stays where it marks community actions — the
+// same functional-identity exemption the game's Community hub uses.
 const overlay = {
   position: "fixed",
   inset: 0,
   zIndex: 120,
-  background: "rgba(4,6,14,0.74)",
-  backdropFilter: "blur(4px)",
+  background: "rgba(43,38,34,0.74)", // colors.canvas as a warm scrim
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -31,11 +34,10 @@ const panel = {
   maxHeight: "88vh",
   display: "flex",
   flexDirection: "column",
-  background: "rgba(14,18,32,0.98)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "18px",
-  color: "#fff",
-  boxShadow: "0 24px 80px rgba(0,0,0,0.55)",
+  background: colors.canvasSoft,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.lg,
+  color: colors.ink,
   overflow: "hidden",
 };
 
@@ -44,15 +46,15 @@ const headerBar = {
   alignItems: "center",
   gap: "0.6rem",
   padding: "0.85rem 1.1rem",
-  borderBottom: "1px solid rgba(255,255,255,0.08)",
+  borderBottom: `1px solid ${colors.hairline}`,
 };
 
 const bodyBox = { padding: "1.1rem", overflowY: "auto" };
 
 const cardSurface = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.09)",
-  borderRadius: "14px",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.md,
   overflow: "hidden",
   display: "flex",
   flexDirection: "column",
@@ -60,43 +62,47 @@ const cardSurface = {
   cursor: "pointer",
 };
 
-const rowTitle = { color: "rgba(255,255,255,0.9)", fontSize: "0.95rem", fontWeight: 800, margin: "0 0 0.6rem" };
+const rowTitle = { color: colors.ink, fontSize: "0.95rem", fontWeight: 600, letterSpacing: "-0.2px", margin: "0 0 0.6rem" };
 const rowScroll = { display: "flex", gap: "0.8rem", overflowX: "auto", paddingBottom: "0.4rem", scrollbarWidth: "thin" };
-const dim = { color: "rgba(255,255,255,0.4)", fontSize: "0.82rem", padding: "0.3rem 0 0.7rem" };
+const dim = { color: colors.mute, fontSize: "0.82rem", padding: "0.3rem 0 0.7rem" };
 
 const tabBtn = (active) => ({
-  background: active ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.06)",
-  border: active ? "1px solid rgba(124,58,237,0.6)" : "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "999px",
-  color: "#fff",
+  // Active tab keeps the community purple (functional identity); inactive is
+  // neutral token chrome.
+  background: active ? "rgba(124,58,237,0.35)" : colors.canvas,
+  border: active ? "1px solid rgba(124,58,237,0.6)" : `1px solid ${colors.hairline}`,
+  borderRadius: rounded.sm,
+  color: colors.ink,
   cursor: "pointer",
   fontSize: "0.8rem",
-  fontWeight: 700,
+  fontWeight: 600,
   padding: "0.32rem 0.9rem",
 });
 
+// Primary CTA: the polarity flip (off-white fill + dark text), tight radius.
 const uploadBtn = {
   alignItems: "center",
-  background: "rgba(59,130,246,0.85)",
-  border: "1px solid rgba(147,197,253,0.5)",
-  borderRadius: "999px",
-  color: "#fff",
+  background: colors.primary,
+  border: `1px solid ${colors.primary}`,
+  borderRadius: rounded.sm,
+  color: colors.onPrimary,
   cursor: "pointer",
   display: "inline-flex",
   fontSize: "0.8rem",
-  fontWeight: 700,
+  fontWeight: 600,
   gap: "0.35rem",
   padding: "0.34rem 0.9rem",
 };
 
+// Circular icon container — the one place rounded.full belongs.
 const closeBtn = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "999px",
-  color: "#fff",
+  background: colors.canvas,
+  border: `1px solid ${colors.hairline}`,
+  borderRadius: rounded.full,
+  color: colors.ink,
   cursor: "pointer",
   fontSize: "0.85rem",
-  fontWeight: 700,
+  fontWeight: 600,
   height: "2rem",
   width: "2rem",
 };
@@ -107,7 +113,7 @@ const BasemapCard = ({ title, imageUrl, active, badge, onClick, onDelete, onPubl
     onClick={onClick}
     title={title}
   >
-    <div style={{ position: "relative", aspectRatio: "3 / 2", background: "#0b1020" }}>
+    <div style={{ position: "relative", aspectRatio: "3 / 2", background: colors.canvas }}>
       {imageUrl ? (
         <img
           src={imageUrl}
@@ -121,13 +127,15 @@ const BasemapCard = ({ title, imageUrl, active, badge, onClick, onDelete, onPubl
           🗺️
         </div>
       )}
+      {/* Warm scrim over artwork for badge legibility. */}
       {badge && (
-        <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(0,0,0,0.55)", borderRadius: "6px", fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.04em", padding: "0.1rem 0.35rem", textTransform: "uppercase" }}>
+        <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(43,38,34,0.7)", borderRadius: rounded.sm, fontSize: "0.6rem", fontWeight: 600, letterSpacing: "0.04em", padding: "0.1rem 0.35rem", textTransform: "uppercase" }}>
           {badge}
         </span>
       )}
+      {/* Status pill — full radius is sanctioned for status indicators. */}
       {active && (
-        <span style={{ position: "absolute", right: 6, top: 6, background: "rgba(124,58,237,0.9)", borderRadius: "999px", fontSize: "0.62rem", fontWeight: 700, padding: "0.1rem 0.4rem" }}>
+        <span style={{ position: "absolute", right: 6, top: 6, background: "rgba(124,58,237,0.9)", borderRadius: rounded.full, fontSize: "0.62rem", fontWeight: 600, padding: "0.1rem 0.4rem" }}>
           ✓ In use
         </span>
       )}
@@ -136,7 +144,7 @@ const BasemapCard = ({ title, imageUrl, active, badge, onClick, onDelete, onPubl
           type="button"
           title="Share this basemap to the community"
           onClick={(e) => { e.stopPropagation(); onPublish(); }}
-          style={{ position: "absolute", left: 6, bottom: 6, background: "rgba(124,58,237,0.85)", border: "1px solid rgba(167,139,250,0.5)", borderRadius: "999px", color: "#fff", cursor: "pointer", fontSize: "0.7rem", height: "1.5rem", width: "1.5rem", lineHeight: 1 }}
+          style={{ position: "absolute", left: 6, bottom: 6, background: "rgba(124,58,237,0.85)", border: "1px solid rgba(167,139,250,0.5)", borderRadius: rounded.full, color: "#fff", cursor: "pointer", fontSize: "0.7rem", height: "1.5rem", width: "1.5rem", lineHeight: 1 }}
         >
           ⤴
         </button>
@@ -146,7 +154,7 @@ const BasemapCard = ({ title, imageUrl, active, badge, onClick, onDelete, onPubl
           type="button"
           title="Remove from your basemaps"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          style={{ position: "absolute", right: 6, bottom: 6, background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "999px", color: "#fff", cursor: "pointer", fontSize: "0.7rem", height: "1.5rem", width: "1.5rem", lineHeight: 1 }}
+          style={{ position: "absolute", right: 6, bottom: 6, background: "rgba(43,38,34,0.75)", border: `1px solid ${colors.hairline}`, borderRadius: rounded.full, color: colors.ink, cursor: "pointer", fontSize: "0.7rem", height: "1.5rem", width: "1.5rem", lineHeight: 1 }}
         >
           ✕
         </button>
@@ -252,7 +260,7 @@ const BasemapPicker = ({
     <div style={overlay} onClick={onClose}>
       <div style={panel} onClick={(e) => e.stopPropagation()}>
         <div style={headerBar}>
-          <div style={{ fontSize: "1.05rem", fontWeight: 800, marginRight: "0.4rem" }}>Basemaps</div>
+          <div style={{ fontSize: "1.05rem", fontWeight: 600, letterSpacing: "-0.2px", marginRight: "0.4rem" }}>Basemaps</div>
           <button type="button" style={tabBtn(tab === "mine")} onClick={() => setTab("mine")}>My Basemaps</button>
           <button type="button" style={tabBtn(tab === "community")} onClick={() => setTab("community")}>Community</button>
           <div style={{ flex: 1 }} />
@@ -339,7 +347,7 @@ const BasemapPicker = ({
                     const canInstall = basemapPostInstallable(post);
                     return (
                     <div key={post.id} style={{ ...cardSurface, flex: "unset", cursor: "default" }}>
-                      <div style={{ position: "relative", aspectRatio: "3 / 2", background: "#0b1020" }}>
+                      <div style={{ position: "relative", aspectRatio: "3 / 2", background: colors.canvas }}>
                         {post.coverImageUrl ? (
                           <img
                             src={post.coverImageUrl}
@@ -352,15 +360,15 @@ const BasemapPicker = ({
                           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.6rem", opacity: 0.5 }}>🗺️</div>
                         )}
                         {post.kind === "vector" && (
-                          <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(0,0,0,0.55)", borderRadius: "6px", fontSize: "0.6rem", fontWeight: 700, padding: "0.1rem 0.35rem", textTransform: "uppercase" }}>vector</span>
+                          <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(43,38,34,0.7)", borderRadius: rounded.sm, fontSize: "0.6rem", fontWeight: 600, padding: "0.1rem 0.35rem", textTransform: "uppercase" }}>vector</span>
                         )}
                         {post.fromScenario && (
-                          <span title="Shared as part of a scenario — installing pulls the map out of that scenario's file" style={{ position: "absolute", right: 6, top: 6, background: "rgba(0,0,0,0.55)", borderRadius: "6px", fontSize: "0.6rem", fontWeight: 700, padding: "0.1rem 0.35rem", textTransform: "uppercase" }}>from scenario</span>
+                          <span title="Shared as part of a scenario — installing pulls the map out of that scenario's file" style={{ position: "absolute", right: 6, top: 6, background: "rgba(43,38,34,0.7)", borderRadius: rounded.sm, fontSize: "0.6rem", fontWeight: 600, padding: "0.1rem 0.35rem", textTransform: "uppercase" }}>from scenario</span>
                         )}
                       </div>
                       <div style={{ padding: "0.5rem 0.6rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.title}</div>
-                        <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)" }}>by {post.author}</div>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.title}</div>
+                        <div style={{ fontSize: "0.68rem", color: colors.mute }}>by {post.author}</div>
                         <button
                           type="button"
                           disabled={!canInstall || busyId === post.id}
@@ -368,7 +376,7 @@ const BasemapPicker = ({
                           title={canInstall ? "Install into Your basemaps" : "This post has no basemap file attached"}
                           style={{
                             ...tabBtn(false),
-                            background: canInstall ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.04)",
+                            background: canInstall ? "rgba(124,58,237,0.35)" : colors.canvas,
                             cursor: canInstall && busyId !== post.id ? "pointer" : "default",
                             opacity: canInstall ? 1 : 0.5,
                           }}

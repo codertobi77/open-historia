@@ -7,6 +7,7 @@ import { flagImageUrlFromGid, flagEmojiFromGid } from "../../runtime/countryFlag
 import { readWorldState } from "../../runtime/gameState.js";
 import { requestDiplomaticChat } from "../GameUI/chat.jsx";
 import { openCountryPanel } from "./CountryPanel.jsx";
+import { colors, fonts, rounded } from "../../design/tokens.js";
 
 let _setSelection = null;
 let _currentSelection = null;
@@ -93,10 +94,10 @@ const IconBtn = ({ children, title, onClick }) => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-            background: hovered ? "rgba(255,255,255,0.1)" : "none",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "6px",
-            color: hovered ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
+            background: hovered ? colors.canvas : "none",
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.sm,
+            color: hovered ? colors.ink : colors.mute,
             cursor: "pointer",
             fontSize: "11px",
             width: "22px",
@@ -334,20 +335,18 @@ const RegionPopup = () => {
             : "regionPopupFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both",
         }}
         >
+        {/* Tokenized chrome: warm canvas-soft + hairline, no blur/shadow. */}
         <div
         style={{
-            backgroundColor: "rgba(17, 24, 39, 0.95)",
-            backdropFilter: "blur(4px)",
-            WebkitBackdropFilter: "blur(4px)",
-            borderRadius: "12px",
+            backgroundColor: colors.canvasSoft,
+            borderRadius: rounded.md,
             overflow: "hidden",
-            fontFamily: "sans-serif",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            color: "white",
+            fontFamily: fonts.sans,
+            border: `1px solid ${colors.hairline}`,
+            color: colors.ink,
         }}
         >
-        <div style={{ position: "relative", width: "100%", height: "96px", background: "rgba(30,42,60,0.6)" }}>
+        <div style={{ position: "relative", width: "100%", height: "96px", background: colors.canvas }}>
         {showFlagImage ? (
             <img
             src={flagState.imageUrl}
@@ -363,10 +362,9 @@ const RegionPopup = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: showFlagEmoji ? "white" : "rgba(255,255,255,0.2)",
+                color: showFlagEmoji ? colors.ink : colors.mute,
                 fontSize: showFlagEmoji ? "3rem" : "11px",
                 letterSpacing: showFlagEmoji ? 0 : "0.05em",
-                textShadow: showFlagEmoji ? "0 4px 18px rgba(0,0,0,0.35)" : "none",
             }}
             >
             {showFlagEmoji
@@ -382,14 +380,14 @@ const RegionPopup = () => {
             position: "absolute",
             top: "7px",
             right: "7px",
-            background: "rgba(17,24,39,0.7)",
-            backdropFilter: "blur(4px)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: "6px",
+            // Warm scrim over the flag artwork for legibility.
+            background: "rgba(43,38,34,0.7)",
+            border: `1px solid ${colors.hairline}`,
+            borderRadius: rounded.sm,
             width: "22px",
             height: "22px",
             cursor: "pointer",
-            color: "rgba(255,255,255,0.5)",
+            color: colors.mute,
             fontSize: "11px",
             padding: 0,
             display: "flex",
@@ -398,12 +396,12 @@ const RegionPopup = () => {
             transition: "color 0.2s, background 0.2s",
         }}
         onMouseEnter={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.9)";
-            e.currentTarget.style.background = "rgba(17,24,39,0.9)";
+            e.currentTarget.style.color = colors.ink;
+            e.currentTarget.style.background = "rgba(43,38,34,0.9)";
         }}
         onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.5)";
-            e.currentTarget.style.background = "rgba(17,24,39,0.7)";
+            e.currentTarget.style.color = colors.mute;
+            e.currentTarget.style.background = "rgba(43,38,34,0.7)";
         }}
         >
         {"\u2715"}
@@ -413,8 +411,9 @@ const RegionPopup = () => {
         <div style={{ padding: "8px 10px 10px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", minHeight: "26px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "7px", minWidth: 0 }}>
-        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#3b82f6", flexShrink: 0, boxShadow: "0 0 6px rgba(59,130,246,0.6)" }} />
-        <span style={{ color: "rgba(255,255,255,0.95)", fontWeight: 600, fontSize: "13px", lineHeight: 1.3, wordBreak: "break-word" }}>
+        {/* Status dot: primary fill, full radius (sanctioned for status pills). */}
+        <span style={{ width: "8px", height: "8px", borderRadius: rounded.full, background: colors.primary, flexShrink: 0 }} />
+        <span style={{ color: colors.ink, fontWeight: 600, fontSize: "13px", lineHeight: 1.3, wordBreak: "break-word" }}>
         {displayCountry}
         </span>
         </div>
@@ -425,10 +424,10 @@ const RegionPopup = () => {
         </div>
         </div>
 
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", margin: "7px 0" }} />
+        <div style={{ borderTop: `1px solid ${colors.hairline}`, margin: "7px 0" }} />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", minHeight: "22px" }}>
-        <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px", minWidth: 0, wordBreak: "break-word" }}>
+        <span style={{ color: colors.body, fontSize: "12px", minWidth: 0, wordBreak: "break-word" }}>
         {NAME_1}
         </span>
         <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
@@ -440,13 +439,14 @@ const RegionPopup = () => {
         </div>
         </div>
 
+        {/* Popup tail matches the canvas-soft surface above it. */}
         <div
         style={{
             width: 0,
             height: 0,
             borderLeft: "8px solid transparent",
             borderRight: "8px solid transparent",
-            borderTop: "9px solid rgba(17,24,39,0.95)",
+            borderTop: `9px solid ${colors.canvasSoft}`,
             margin: "0 auto",
         }}
         />
