@@ -345,6 +345,17 @@ async function providerFetch(url, options = {}) {
                 `(LM Studio: turn on CORS in its server settings), then try again.`,
             );
         }
+        // Hosted page, REMOTE endpoint, and the browser rejected the reply: a
+        // TypeError here is a CORS block or a network failure, and the bare
+        // "Failed to fetch" tells the player nothing. Most remote AI APIs do not
+        // allow direct browser calls, so name the likely cause and the workaround.
+        if (!PAGE_IS_LOCAL && !aborted && error instanceof TypeError) {
+            throw new Error(
+                `The browser could not reach ${origin}. This usually means the provider does not ` +
+                `allow cross-origin (CORS) requests from a website. Enter a model manually, or ` +
+                `switch to a provider/gateway that allows browser calls (Gemini, OpenAI, Anthropic).`,
+            );
+        }
         throw error;
     }
 }
@@ -569,7 +580,11 @@ async function resolveModel(provider, { endpoint = "", headers = {}, fallbackMod
     }
 
     try {
-        const models = await discoverModels({ endpoint: normalizedEndpoint, headers, signal });
+        // `provider` MUST ride along: without it discoverModels normalizes
+        // undefined to the DEFAULT_PROVIDER (gemini) and an OpenAI-compatible
+        // gateway's /models probe is misrouted to Gemini's key-gated endpoint
+        // ("A Gemini API key is required to list models").
+        const models = await discoverModels({ provider, endpoint: normalizedEndpoint, headers, signal });
         const discoveredModel = pickLikelyChatModel(models);
 
         if (!discoveredModel) {
