@@ -151,7 +151,7 @@ export function sanitizeHeaders(headers) {
     return forwarded;
 }
 
-export default async function handler(request) {
+async function handler(request) {
     if (request.method !== "POST") return jsonResponse(405, "The AI relay only accepts POST.");
 
     let raw;
@@ -234,3 +234,13 @@ export default async function handler(request) {
         headers: responseHeaders,
     });
 }
+
+// Vercel's Node.js runtime invokes a bare `export default function (req, res)`
+// with the LEGACY (req, res) => void signature — `req` is Node's IncomingMessage
+// and the returned Web Response is silently discarded, so every request hung
+// until FUNCTION_INVOCATION_TIMEOUT (a 504 after the full maxDuration) no matter
+// what was sent. The `{ fetch }` object export is the signature the runtime
+// recognizes for Web Request/Response handlers, so it receives a real Request
+// and ships the returned Response back to the client.
+// See vercel.com/docs/functions/runtimes/node-js ("fetch Web Standard export").
+export default { fetch: handler };

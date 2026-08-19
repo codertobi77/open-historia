@@ -129,6 +129,21 @@ const buildWorldStyle = (basemapId, customBg, backgroundDeclared, isGlobe) => {
       maxzoom: 5,
       tileSize: 256,
     },
+    // A SECOND raster-dem source over the same tiles, dedicated to the hillshade
+    // layer. MapLibre warns (and renders the shading at reduced quality) when one
+    // raster-dem source feeds both 3D terrain and a hillshade layer — the two
+    // consumers need different tile processing, so it wants them on separate
+    // sources. The tiles themselves are HTTP-cached, so the duplicate source
+    // costs no extra network traffic.
+    "hillshade-source": {
+      type: "raster-dem",
+      tiles: [
+        TERRAIN_TILE_TEMPLATE,
+      ],
+      encoding: "terrarium",
+      maxzoom: 5,
+      tileSize: 256,
+    },
   },
   layers: [
     {
@@ -146,7 +161,7 @@ const buildWorldStyle = (basemapId, customBg, backgroundDeclared, isGlobe) => {
     {
       id: "hills",
       type: "hillshade",
-      source: "terrain-source",
+      source: "hillshade-source",
       paint: {
         "hillshade-exaggeration": 0.1,
         "hillshade-shadow-color": "#000",
