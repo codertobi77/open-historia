@@ -129,7 +129,7 @@
         <li><strong>OpenAI Compatible</strong> — any API that speaks the <code>/v1/chat/completions</code> protocol (Ollama, LM Studio, llama.cpp, DeepSeek, Groq, Together.ai, OpenRouter, and more)</li>
         <li><strong>Anthropic Compatible</strong> — any self-hosted proxy that speaks the Anthropic Messages API</li>
       </ul>
-      <p>For providers that don't send CORS headers from the browser (OpenAI, OpenAI Compatible, Anthropic Compatible), the game's Express server includes a <code>/api/ai/relay</code> endpoint that proxies requests securely. Gemini and Anthropic's native APIs support direct browser access and don't use the relay.</p>
+      <p>All calls go directly from your browser to the provider first. For providers that block browser CORS (NVIDIA NIM, some OpenAI-compatible gateways), the site automatically falls back to a same-origin relay (<code>/api/ai/relay</code>) that forwards the request server-side. Gemini and Anthropic's native APIs support direct browser access and never use the relay.</p>
     </div>
 
     <h2>Provider Setup Options</h2>
@@ -305,7 +305,7 @@
           </tr>
         </tbody>
       </table>
-      <p>For any of these, select <strong>OpenAI Compatible</strong>, paste the endpoint URL and your API key from that service, and set the model name. The relay handles CORS automatically.</p>
+      <p>For any of these, select <strong>OpenAI Compatible</strong>, paste the endpoint URL and your API key from that service, and set the model name. If the service blocks browser CORS, the site's relay fallback handles it automatically.</p>
     </div>
 
     <h2>Choosing the Right Option</h2>
@@ -453,7 +453,7 @@
       <h3>AI responses are slow</h3>
       <p>For local models: try a smaller model (3B parameters) or enable GPU acceleration. Ollama and LM Studio both support GPU offloading. For cloud APIs: slower models like GPT-4.1 or Claude Sonnet produce higher quality but take longer — try a faster model if latency is an issue. Groq is particularly fast for cloud inference.</p>
       <h3>CORS errors when using a remote backend</h3>
-      <p>The game handles CORS automatically for OpenAI, OpenAI Compatible, and Anthropic Compatible providers via the relay endpoint. If you're seeing CORS errors, make sure you're using the correct provider type — Gemini and Anthropic work direct from the browser, everything else routes through <code>/api/ai/relay</code>.</p>
+      <p>The game tries a direct browser call first. If the provider blocks it (CORS), the site falls back to its relay (<code>/api/ai/relay</code>) automatically for OpenAI, OpenAI Compatible, NVIDIA NIM, and Anthropic Compatible providers. If you still see errors, make sure you're using the correct provider type — Gemini and Anthropic work direct from the browser and never need the relay.</p>
       <h3>DeepSeek / OpenRouter returns errors</h3>
       <p>These services use the OpenAI Compatible provider. Ensure the endpoint URL is correct and includes <code>/v1</code>. The model name must match exactly what the service expects (e.g., <code>deepseek-chat</code> for DeepSeek, or the full OpenRouter model slug like <code>openai/gpt-4.1</code>).</p>
     </div>

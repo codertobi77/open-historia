@@ -239,22 +239,32 @@ function getGeminiUrl(model, apiKey) {
 
 // AI calls go straight from the browser to the provider so the player's API key
 // only ever reaches the provider — never a server or a community node. Direct is
-// always tried first. When the page is served from a machine the player
-// controls (localhost / a LAN box) AND a same-origin /api/ai/relay is reachable
-// there, a direct call that the endpoint refused (self-hosted OpenAI-/Anthropic-
-// style backends like Ollama or LM Studio rarely send browser CORS headers) falls
-// back to that relay, which re-issues the request server-side. This repo ships
-// only the web build, which never runs such a relay: every call is direct-only
-// and the key is never handed to anything but the provider, and a local backend
-// that won't send CORS headers is surfaced with a clear fix-instead-of-failing
-// silently. Gemini and native Anthropic were already direct — both allow browser
-// calls explicitly.
+// always tried first. When the browser refuses the direct call (a CORS block or
+// network failure — fetch rejects with a TypeError), the call falls back to the
+// same-origin /api/ai/relay, which re-issues the request server-side:
+//
+// - On the HOSTED site the relay is a Vercel serverless function
+//   (api/ai/relay.js). It exists because many AI providers (NVIDIA NIM, most
+//   OpenAI-compatible gateways) do not send browser CORS headers at all, so a
+//   direct call can never succeed from a website. The trade-off is stated
+//   plainly: for those providers the key transits the relay function on its way
+//   to the provider. Providers that DO allow browser calls (Gemini, OpenAI,
+//   Anthropic) never touch the relay — their direct call succeeds first.
+// - On a LOCAL page (localhost / a LAN box) the relay is whatever relay the
+//   player's own install runs (the deleted Express server used to be one),
+//   defeating CORS for self-hosted backends like Ollama or LM Studio.
+//
+// One hard rule in both cases: a LOCAL endpoint (localhost/LAN) is NEVER
+// relayed from a hosted page — the relay function runs in the cloud and cannot
+// reach the player's machine anyway; those get the OLLAMA_ORIGINS guidance
+// error instead. Gemini and native Anthropic bypass providerFetch entirely
+// (plain fetch) — both allow browser calls explicitly, so their keys never
+// touch any relay.
 
-// True when this page is served from a machine the player controls, i.e. a local
-// same-origin relay could be reachable. This repo's web build never serves one
-// (no bundled server), so this stays false on the hosted site; the branch is
-// kept so a self-hosted local install that runs a relay can still use it. The LAN
-// private ranges cover a self-hosted UI served from a home network box.
+// True when this page is served from a machine the player controls, i.e. the
+// same-origin relay is one the player runs themselves. False on the hosted
+// site, where the relay is the deployment's serverless function instead. The
+// LAN private ranges cover a self-hosted UI served from a home network box.
 function isLocallyServed() {
     if (typeof window === "undefined") return false;
     const host = window.location.hostname;
@@ -308,6 +318,26 @@ const relayFetch = (url, { method = "POST", headers = {}, payload, signal } = {}
         signal,
     });
 
+// Attempts the relay and returns null when NO relay exists at this origin, so
+// the caller can surface the original CORS error instead of a confusing
+// relay-side failure. Two shapes mean "no relay": the fetch itself fails
+// (nothing answers /api/ai/relay), or a static host's SPA fallback answers the
+// unknown POST with an HTML page. A real relay — the Vercel function or a
+// self-hosted one — marks every answer, errors included, with the
+// x-open-historia-relay header (see api/ai/relay.js).
+async function tryRelayFetch(url, options) {
+    let response;
+    try {
+        response = await relayFetch(url, options);
+    } catch (error) {
+        if (options?.signal?.aborted || error?.name === "AbortError") throw error;
+        return null;
+    }
+    const isRealRelay = response.headers.get("x-open-historia-relay") === "1";
+    const isHtmlFallback = String(response.headers.get("content-type") || "").includes("text/html");
+    return isRealRelay || !isHtmlFallback ? response : null;
+}
+
 const directFetch = (url, { method = "POST", headers = {}, payload, signal } = {}) =>
     fetch(url, {
         method,
@@ -322,21 +352,20 @@ const directFetch = (url, { method = "POST", headers = {}, payload, signal } = {
 async function providerFetch(url, options = {}) {
     const origin = endpointOrigin(url);
 
-    if (PAGE_IS_LOCAL && relayOnlyOrigins.has(origin)) {
-        return relayFetch(url, options);
+    if (relayOnlyOrigins.has(origin)) {
+        const relayed = await tryRelayFetch(url, options);
+        if (relayed) return relayed;
+        relayOnlyOrigins.delete(origin); // the relay is gone — retry direct from now on
     }
 
     try {
         return await directFetch(url, options);
     } catch (error) {
         const aborted = options.signal?.aborted || error?.name === "AbortError";
-        if (PAGE_IS_LOCAL && !aborted && error instanceof TypeError) {
-            relayOnlyOrigins.add(origin);
-            return relayFetch(url, options);
-        }
         // Hosted page, local backend, and the browser rejected the reply: this is
         // almost always the backend not allowing this origin, and "Failed to fetch"
-        // is indistinguishable from the network being down. Say what to actually do.
+        // is indistinguishable from the network being down. The cloud relay can't
+        // reach the player's machine, so never relay this case — say what to do.
         if (!PAGE_IS_LOCAL && !aborted && error instanceof TypeError && isLocalEndpoint(url)) {
             const site = typeof window !== "undefined" ? window.location.origin : "this site";
             throw new Error(
@@ -345,15 +374,21 @@ async function providerFetch(url, options = {}) {
                 `(LM Studio: turn on CORS in its server settings), then try again.`,
             );
         }
-        // Hosted page, REMOTE endpoint, and the browser rejected the reply: a
-        // TypeError here is a CORS block or a network failure, and the bare
-        // "Failed to fetch" tells the player nothing. Most remote AI APIs do not
-        // allow direct browser calls, so name the likely cause and the workaround.
+        if (!aborted && error instanceof TypeError) {
+            relayOnlyOrigins.add(origin);
+            const relayed = await tryRelayFetch(url, options);
+            if (relayed) return relayed;
+            relayOnlyOrigins.delete(origin);
+        }
+        // No relay answered. On a hosted page a REMOTE endpoint failing with a
+        // TypeError is a CORS block or a network failure, and the bare "Failed to
+        // fetch" tells the player nothing — name the likely cause and the workaround.
         if (!PAGE_IS_LOCAL && !aborted && error instanceof TypeError) {
             throw new Error(
-                `The browser could not reach ${origin}. This usually means the provider does not ` +
-                `allow cross-origin (CORS) requests from a website. Enter a model manually, or ` +
-                `switch to a provider/gateway that allows browser calls (Gemini, OpenAI, Anthropic).`,
+                `The browser could not reach ${origin}, and this site has no relay to call it ` +
+                `server-side. This usually means the provider does not allow cross-origin (CORS) ` +
+                `requests from a website. Enter a model manually, or switch to a provider/gateway ` +
+                `that allows browser calls (Gemini, OpenAI, Anthropic).`,
             );
         }
         throw error;
@@ -1172,10 +1207,11 @@ async function callAnthropicCompatible(systemPrompt, history, {
         signal,
     });
 
-    // Self-hosted proxy: tried directly first, falling back to the local relay
-    // if it refuses the browser call (providerFetch). The browser-access opt-in
-    // the real API needs is dropped — a proxy served over a website must send its
-    // own CORS headers — and the key rides as x-api-key only if provided.
+    // Self-hosted proxy: tried directly first, falling back to the same-origin
+    // /api/ai/relay if it refuses the browser call (providerFetch). The
+    // browser-access opt-in the real API needs is dropped — a proxy served over
+    // a website must send its own CORS headers — and the key rides as x-api-key
+    // only if provided.
     const headers = {
         "Content-Type": "application/json",
         "anthropic-version": "2023-06-01",

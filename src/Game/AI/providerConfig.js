@@ -72,10 +72,11 @@ const PROVIDER_SETTINGS = {
         customParams: { storageKey: "anthropic_custom_params", defaultValue: "" },
     },
     // Self-hosted proxy speaking the Anthropic Messages API — called directly
-    // from the browser first, falling back to the local relay only when the page
-    // is served locally (see main.jsx providerFetch/callAnthropicCompatible). On
-    // a hosted website the proxy must send its own CORS headers. Separate from
-    // the native Anthropic API above.
+    // from the browser first, falling back to the same-origin /api/ai/relay when
+    // the browser call is CORS-blocked (see main.jsx providerFetch /
+    // callAnthropicCompatible): the Vercel function on the hosted site, or a
+    // relay the player runs on a local install. Separate from the native
+    // Anthropic API above.
     "anthropic-compatible": {
         apiKey: { storageKey: "anthropic_compatible_api_key", defaultValue: "" },
         endpoint: { storageKey: "anthropic_compatible_endpoint", defaultValue: "" },

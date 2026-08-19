@@ -197,7 +197,7 @@ The web router monkey-patches `window.fetch` and dispatches same-origin `/api/*`
 | `/api/mapeditor/documents…` | GET/POST/PUT/DELETE | `mapEditorStore.js` |
 | `/api/basemaps…`, `/api/flags…` | GET/POST/DELETE | `basemapStore.js`, `flagStore.js` |
 | `/api/ui-settings`, `/api/lang/:code` | GET/PUT | shared UI language + accumulated translation packs |
-| `/api/ai/relay` | POST | **Dormant / legacy path.** On openhistoria.com the browser calls the player's AI provider directly (provider must allow the site origin, e.g. `OLLAMA_ORIGINS`). The relay only ever applies to a self-hosted local install that chooses to run its own relay — the deleted Express server was the only thing that ever implemented it. |
+| `/api/ai/relay` | POST | **Serverless relay for CORS‑blocked providers.** The hosted site ships a Vercel function (`api/ai/relay.js`) that re‑issues AI‑provider requests server‑side when the browser's direct call is CORS‑blocked (NVIDIA NIM, most OpenAI‑compatible gateways). Direct is always tried first; Gemini/OpenAI/Anthropic never touch it. The web router passes this path through to the real network (`router.js:164`) instead of answering it from IndexedDB. Local endpoints are never relayed from a hosted page. |
 | `/api/hub/file`, `/api/hub/import-log`, `/api/hub/import-counts` | GET/POST | Community hub GitHub proxy + self-hosted import counter; `/api/hub/*` forwards to the registry Worker |
 
 ### The one backend, one contract

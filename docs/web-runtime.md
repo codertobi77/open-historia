@@ -41,7 +41,8 @@ Because the interceptor is installed before `mount()`, no client request can esc
 `installWebApiRouter()` (`router.js:138`) saves the real `window.fetch` as `originalFetch`, then replaces `window.fetch` with a wrapper that:
 
 - Resolves the request URL against `window.location.href`.
-- **Only** intercepts requests where `url.origin === window.location.origin && url.pathname.startsWith("/api/")` (`router.js:153`). Everything else — AI providers, GitHub API, ESRI tiles, static assets, Google Identity, content-node URLs — passes straight to `originalFetch`.
+- **Only** intercepts requests where `url.origin === window.location.origin && url.pathname.startsWith("/api/")` (`router.js:155`). Everything else — AI providers, GitHub API, ESRI tiles, static assets, Google Identity, content-node URLs — passes straight to `originalFetch`.
+- One same-origin `/api/*` path is exempted from interception: `/api/ai/relay` (`router.js:164`) passes through to the real network so it reaches the Vercel serverless function (or a self-hosted relay). See §6.
 - Builds a real `Request`, dispatches to `route(request, url)`, and returns a real `Response`, so all existing client code runs unchanged.
 - On throw: `SyntaxError` (bad JSON body) → `400`, anything else → `500` — mirroring the deleted Express server's body-parser behavior (`router.js:160`).
 
@@ -123,15 +124,20 @@ A handful of modules that used to live under `server/` were promoted out of it d
 
 ---
 
-## 6. AI: no relay on the web build
+## 6. AI: direct calls, with a serverless relay fallback
 
-The deleted Express server exposed `POST /api/ai/relay` so a self-hosted local install could defeat browser CORS when calling a player's own OpenAI-compatible endpoint (Ollama, LM Studio) from `localhost`. **The web build does not run a relay.** There is no `/api/ai/relay` handler in `router.js` — the route is simply absent from the dispatch table in §3.
+AI calls always go **browser → provider direct first**: the request leaves the page straight to the configured provider, passing through the interceptor untouched because it is not same-origin `/api/*`. Providers that allow browser calls (Gemini, OpenAI, Anthropic) succeed this way and never touch any relay.
 
-On `openhistoria.com`, AI calls go **browser → provider direct**: the request leaves the page straight to the configured OpenAI-compatible endpoint (or to Google Gemini / Anthropic directly), passing through the interceptor untouched because it is not same-origin `/api/*`. Most commercial providers send permissive CORS headers; a local backend does not, which is the one operational difference.
+Many providers, however, do not send CORS headers at all (NVIDIA NIM, most OpenAI-compatible gateways), so a direct browser call can never succeed from a website. For those, `providerFetch` (`src/Game/AI/main.jsx`) falls back to the same-origin `POST /api/ai/relay`, which re-issues the request server-side:
 
-If you self-host Open Historia locally and want the relay back, you must run your **own** relay — the `/api/ai/relay` code path still exists in `src/Game/AI/main.jsx` but is gated behind `PAGE_IS_LOCAL = isLocallyServed()` and only fires when the page is served from a local server that itself answers `/api/ai/relay`. On the hosted website `isLocallyServed()` is false and the path is never taken.
+- **On the hosted site** (`openhistoria.com` / any Vercel deployment), the relay is a Vercel serverless function at `api/ai/relay.js`. It is deliberately narrow: https-only, GET/POST only, a header allowlist (`authorization`, `x-api-key`, `api-key`, `content-type`, `accept`, `anthropic-version`, `anthropic-dangerous-direct-browser-access`), a 4 MB body cap, `redirect: "error"`, a 55 s timeout, and a DNS-resolution SSRF guard that blocks private/loopback/link-local/reserved addresses. It forwards the provider's status, content-type, and streamed body back verbatim. The trade-off is stated plainly: for CORS-blocked providers the player's key transits this function on its way to the provider.
+- **On a local page** (localhost / LAN), the relay is whatever relay the player's own install runs. The deleted Express server used to be one; a self-hosted install can run its own to defeat CORS for local backends like Ollama or LM Studio.
 
-For a local Ollama/LM Studio backend used with the hosted site, configure the provider to allow the site's origin (e.g. `OLLAMA_ORIGINS=https://openhistoria.com`) so the browser's direct cross-origin call is accepted. See [ai-overview.md](ai-overview.md) for the transport-internals view and provider configuration.
+The web router (`router.js:164`) passes `/api/ai/relay` through to the real network instead of answering it from IndexedDB — without that exemption the interceptor would 404 it and the fallback would never work.
+
+One hard rule in both cases: a **local endpoint** (localhost/LAN) is never relayed from a hosted page — the cloud function cannot reach the player's machine. Those get an actionable error telling the player to set `OLLAMA_ORIGINS` / enable CORS on their local server instead.
+
+The client detects an absent relay (a static host answering the unknown POST with an HTML page, or nothing answering at all) via the `x-open-historia-relay: 1` marker header that every real relay response carries, and falls back to surfacing the original CORS error. See [ai-overview.md](ai-overview.md) for the transport-internals view and provider configuration.
 
 ---
 
@@ -139,6 +145,6 @@ For a local Ollama/LM Studio backend used with the hosted site, configure the pr
 
 - [web-build.md](web-build.md) — how the web build boots and is gated, the `.env.web` configuration, the IndexedDB layer (`idb.js`), the library store record shapes / owner migration / export-import, cover-image data-URL behavior, the node swarm + trust chain, and accounts + E2E sync.
 - [architecture.md](architecture.md) — tech stack, the boot fork, the `/api` surface from the data-flow side, frontend ↔ backend write path.
-- [ai-overview.md](ai-overview.md) — supported AI providers, where the key goes (direct calls vs origin vs the dormant relay path), transport internals per provider.
+- [ai-overview.md](ai-overview.md) — supported AI providers, where the key goes (direct calls vs the relay fallback), transport internals per provider.
 - [assets-and-data.md](assets-and-data.md) — the asset catalog, PMTiles resolution order, and the `map-data` GitHub Release the pmtiles branch proxies.
 - [runtime-services.md](runtime-services.md) — the client-side library / scenario / game / i18n services that issue the `/api/*` calls this runtime answers.

@@ -4,7 +4,9 @@
 // IndexedDB stores, so all the existing client code (library.js, assets.js,
 // documentIO.js, basemapLibrary.js) runs UNCHANGED. Everything that is not
 // /api/* (AI providers, GitHub, ESRI tiles, static assets) passes straight
-// through to the real fetch.
+// through to the real fetch — as does the one /api/* route that must reach a
+// real network: /api/ai/relay (a Vercel serverless function on the hosted
+// site, or a self-hosted relay on a local install).
 
 import { errorResponse } from "./util.js";
 import { handleMapEditor } from "./editorStore.js";
@@ -151,6 +153,15 @@ export const installWebApiRouter = () => {
     }
 
     if (url.origin !== window.location.origin || !url.pathname.startsWith("/api/")) {
+      return originalFetch(input, init);
+    }
+
+    // The one /api/* route the router does NOT answer from IndexedDB: the AI
+    // relay must reach the real network (api/ai/relay.js on Vercel, or a
+    // self-hosted relay locally). Letting route() see it would 404 it as an
+    // "Unknown web-mode endpoint" and the relay fallback in src/Game/AI/main.jsx
+    // would never work.
+    if (url.pathname === "/api/ai/relay") {
       return originalFetch(input, init);
     }
 
