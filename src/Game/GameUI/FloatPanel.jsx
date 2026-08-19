@@ -199,6 +199,14 @@ const FloatPanel = ({
         width: `${geom.w}px`,
         height: `${geom.h}px`,
         zIndex,
+        // Flex column so the header takes its fixed height and the content
+        // div's flex:1/minHeight:0 actually constrains it to the remaining
+        // space. Without this the content div sizes to its children and
+        // overflows the panel's fixed height. overflow:hidden clips at the
+        // rounded border.
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
         pointerEvents: isOpen ? "auto" : "none",
         opacity: isOpen ? 1 : 0,
         visibility: hideWhenClosed && !isOpen ? "hidden" : "visible",
