@@ -1778,13 +1778,18 @@ export const generateCountryStats = async ({ code, name } = {}) => {
 
 // Structured national stat sheet for the Stats tab, grounded in the same
 // campaign context as the intelligence briefing.
-export const generateCountryStatSheet = async ({ code, name } = {}) => {
+export const generateCountryStatSheet = async ({ code, name, timeoutMs } = {}) => {
   const bundle = await readGameStateBundle({ force: true });
   const variables = await buildTemplateVariables(bundle);
   const target = name || code || "the polity";
   const dossier = await buildTargetDossier(bundle, normalizeString(code));
   const era = normalizeString(bundle.world?.simulationRules).slice(0, 700);
   const { payload } = await runJsonTask("countryStatSheet", {
+    // Callers on a latency budget (the pre-jump auto-seed) pass a short
+    // timeoutMs so a slow/rate-limited provider fails fast instead of
+    // stalling the jump; interactive callers (Stats tab) omit it and keep
+    // the runJsonTask default.
+    timeoutMs,
     userMessage: [
       `Compile the national stat sheet for ${target}${code ? ` (code ${code})` : ""}.`,
       era ? `ERA & WORLD RULES:\n${era}` : "",
@@ -2068,7 +2073,19 @@ const formatDurationLabel = (days) => {
 // can't be mutated by the AI's polityChanges.stats, so we seed it here so the
 // stats evolution directive has something to merge into. Bounded + silent:
 // this only smooths the first encounter and must never block a turn.
-const ENSURE_STAT_SEED_MAX = 8;
+//
+// Kept deliberately small (4, down from 8): seeds run SEQUENTIALLY, and each
+// one is a full AI round-trip. When a provider is rate-limited or slow, every
+// seed can sit waiting until it fails, so the old cap let a single jump burn
+// 8 x ~55s (the relay timeout) = over 7 minutes before the turn even started.
+// 4 seeds x the per-seed timeout below bounds the worst case to ~2 minutes,
+// and in practice seeds either land quickly or abort fast.
+const ENSURE_STAT_SEED_MAX = 4;
+// Per-seed deadline. A seed that has not answered in 30s is almost certainly
+// hitting a busy/rate-limited provider; aborting it lets the jump proceed and
+// leaves the sheet to be generated on demand from the Stats tab later. This
+// is well under the relay's own 55s timeout, so the abort always wins the race.
+const ENSURE_STAT_SEED_TIMEOUT_MS = 30000;
 const ensureStatSheetsForJump = async (bundle) => {
   const world = bundle?.world;
   const existing = world?.countryStats && typeof world.countryStats === "object" ? world.countryStats : {};
@@ -2094,7 +2111,7 @@ const ensureStatSheetsForJump = async (bundle) => {
     try {
       // seedMissing=true below lets the helper no-op if another caller just
       // persisted a sheet for the same code (a re-read guards the write path).
-      await maybeGenerateCountryStatSheet({ code });
+      await maybeGenerateCountryStatSheet({ code, timeoutMs: ENSURE_STAT_SEED_TIMEOUT_MS });
       seen.add(code);
     } catch (error) {
       console.warn(`[ai] auto-seed of stat sheet for ${code} failed:`, error);
@@ -2105,14 +2122,14 @@ const ensureStatSheetsForJump = async (bundle) => {
 // Like generateCountryStatSheet but a no-op when a sheet already exists. Keeps
 // the auto-seed a pure first-time affair (never re-regenerates an existing
 // sheet the AI purposefully maintained).
-const maybeGenerateCountryStatSheet = async ({ code, name } = {}) => {
+const maybeGenerateCountryStatSheet = async ({ code, name, timeoutMs } = {}) => {
   const existing = await readWorldState({ force: true });
   const codeKey = normalizeString(code);
   if (!codeKey) return null;
   if (existing?.countryStats && typeof existing.countryStats === "object" && existing.countryStats[codeKey]) {
     return existing.countryStats[codeKey];
   }
-  return generateCountryStatSheet({ code: codeKey, name });
+  return generateCountryStatSheet({ code: codeKey, name, timeoutMs });
 };
 
 export const simulateTimelineJump = async ({ days, mode = "jump", signal } = {}) => {
