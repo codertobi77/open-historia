@@ -1289,6 +1289,79 @@ async function callAnthropicCompatible(systemPrompt, history, {
     }
 }
 
+// Runs a one-shot connection probe against a specific provider using the
+// credentials already persisted in localStorage (the same path callAI takes
+// during real play). It does NOT go through sendMessage/advisorHistory, so it
+// can't pollute the advisor transcript, and it restores the previously-active
+// provider if it had to swap it — so a player can test the Gemini panel while
+// OpenAI is the active provider without permanently switching over.
+//
+// The probe is a deliberately tiny prompt ("Reply with exactly: OK") with a
+// short maxTokens and no streaming; it exercises the provider's full auth +
+// model-resolution + relay-fallback path, which is what a real turn uses.
+// Returns { ok: true, reply, model } on success (the model callAI resolved to,
+// re-read from storage so a freshly auto-discovered manual id is captured) or
+// { ok: false, error } on any failure. A 60s local timeout bounds a hung
+// provider; combined with the caller's optional signal via AbortSignal.any so
+// either source cancels the probe.
+const TEST_CONNECTION_TIMEOUT_MS = 60000;
+
+function trimTo(value, max) {
+    const text = typeof value === "string" ? value : String(value ?? "");
+    const collapsed = text.replace(/\s+/g, " ").trim();
+    if (collapsed.length <= max) return collapsed;
+    return `${collapsed.slice(0, max - 1)}…`;
+}
+
+export async function testProviderConnection({ provider, signal } = {}) {
+    const targetProvider = normalizeProvider(provider);
+    const previousProvider = localStorage.getItem("api_provider");
+    const swappedProvider = previousProvider !== targetProvider;
+    if (swappedProvider) {
+        localStorage.setItem("api_provider", targetProvider);
+    }
+
+    // The probe needs its own deadline so a hung provider can't spin the button
+    // forever; AbortSignal.any folds the caller's signal in so a user-initiated
+    // cancel also wins. Fall back to the local signal alone where any() is absent.
+    const localController = new AbortController();
+    const timeoutId = setTimeout(
+        () => localController.abort(new Error("The test connection timed out (60s).")),
+        TEST_CONNECTION_TIMEOUT_MS,
+    );
+    const combinedSignal = signal && AbortSignal?.any
+        ? AbortSignal.any([localController.signal, signal])
+        : localController.signal;
+
+    try {
+        const reply = await callAI(
+            "You are a connection test. Reply with exactly the two characters: OK",
+            [{ role: "user", parts: [{ text: "Reply with exactly: OK" }] }],
+            { maxTokens: 64, signal: combinedSignal, languageMode: "none" },
+        );
+        const text = trimTo(reply, 80);
+        // Re-read the resolved model AFTER the call: when no model was
+        // configured, callGemini/callOpenAI auto-discover one and persist it,
+        // so this captures what the player will actually use on a real turn.
+        const resolvedModel = trimTo(getProviderSettings(targetProvider).model, 80)
+            || "(auto-detected)";
+        return { ok: true, reply: text, model: resolvedModel };
+    } catch (error) {
+        const message = error?.name === "AbortError"
+            ? (error?.message || "Connection test cancelled.")
+            : trimTo(error?.message || error, 300) || "Connection test failed.";
+        return { ok: false, error: message };
+    } finally {
+        clearTimeout(timeoutId);
+        if (swappedProvider) {
+            // Restore the player's previously-active provider so the test never
+            // silently changes which AI the next real turn uses.
+            if (previousProvider == null) localStorage.removeItem("api_provider");
+            else localStorage.setItem("api_provider", previousProvider);
+        }
+    }
+}
+
 export async function callAI(systemPrompt, history, opts = {}) {
     // Non-English players get replies in their language at the source —
     // native answers beat post-translating them (see runtime/i18n.js).

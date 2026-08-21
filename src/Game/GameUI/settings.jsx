@@ -9,6 +9,7 @@ import {
     getReasoningEnabled,
     setReasoningEnabled,
 } from "../AI/providerConfig.js";
+import { testProviderConnection } from "../AI/main.jsx";
 import {
     getLanguageOptions,
     getStoredChatLanguage,
@@ -366,6 +367,130 @@ const ApiProviderSelector = ({ provider, onProviderChange }) => {
     );
 };
 
+// One-click self-check that the currently-displayed provider's key/endpoint/
+// model actually work end to end. It runs a tiny probe through the SAME callAI
+// path a real turn uses (auth + model resolution + relay fallback), so it
+// catches the whole class of "I saved the key but the provider still 401s"
+// without the player having to start a game and send a message. The test never
+// permanently changes which provider is active: testProviderConnection swaps
+// the stored provider only for the duration of the probe and restores it after.
+const TestConnection = ({ provider }) => {
+    // status: "idle" | "testing" | "success" | "error". The result line below
+    // the button carries the resolved model + a snippet on success, or the
+    // provider's own error message on failure (relayed verbatim by our same-
+    // origin /api/ai/relay, so a 401 from NVIDIA shows here as it would in a
+    // real turn, not as a generic "Network error").
+    const [status, setStatus] = useState("idle");
+    const [result, setResult] = useState("");
+    const [model, setModel] = useState("");
+
+    const runTest = async () => {
+        setStatus("testing");
+        setResult("");
+        setModel("");
+        const outcome = await testProviderConnection({ provider });
+        if (outcome?.ok) {
+            setStatus("success");
+            setModel(outcome.model || "");
+            setResult(outcome.reply || "");
+        } else {
+            setStatus("error");
+            setModel("");
+            setResult(outcome?.error || "Connection test failed.");
+        }
+    };
+
+    // Colored status pill pulled from the design tokens. Success/error stay on
+    // the warm canvas; the accent is the semantic color only — no blue or
+    // gradient. Matches the existing unit-strength / badge vocabulary.
+    const statusColors = {
+        idle: { text: colors.mute, border: colors.hairline, fill: colors.canvasSoft },
+        testing: { text: colors.bodyStrong, border: colors.hairline, fill: colors.canvasSoft },
+        success: { text: "#2f6e3a", border: "rgba(47,110,58,0.45)", fill: "rgba(47,110,58,0.16)" },
+        error: { text: "#c0392b", border: "rgba(192,57,43,0.45)", fill: "rgba(192,57,43,0.14)" },
+    };
+
+    const isTesting = status === "testing";
+    const label = {
+        idle: "Test connection",
+        testing: "Testing…",
+        success: "Test again",
+        error: "Retry",
+    }[status];
+    const accent = statusColors[status];
+
+    return (
+        <div style={{ marginTop: "0.7rem", marginBottom: "0.25rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
+                <button
+                    type="button"
+                    onClick={runTest}
+                    disabled={isTesting}
+                    style={{
+                        flex: 1,
+                        padding: "0.55rem 0.7rem",
+                        borderRadius: `${rounded.sm}px`,
+                        border: `1px solid ${colors.hairline}`,
+                        backgroundColor: colors.canvasSoft,
+                        color: colors.ink,
+                        cursor: isTesting ? "default" : "pointer",
+                        opacity: isTesting ? 0.6 : 1,
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        textAlign: "left",
+                    }}
+                >
+                    {isTesting ? "Testing…" : label}
+                </button>
+                {status !== "idle" && (
+                    <span
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "0 0.55rem",
+                            borderRadius: `${rounded.full}px`,
+                            border: `1px solid ${accent.border}`,
+                            backgroundColor: accent.fill,
+                            color: accent.text,
+                            fontSize: "0.66rem",
+                            fontWeight: 700,
+                            letterSpacing: "0.02em",
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {status === "testing" ? "Running" : status === "success" ? "OK" : "Failed"}
+                    </span>
+                )}
+            </div>
+            {result && (
+                <div
+                    style={{
+                        marginTop: "0.4rem",
+                        padding: "0.5rem 0.6rem",
+                        borderRadius: `${rounded.sm}px`,
+                        border: `1px solid ${accent.border}`,
+                        backgroundColor: accent.fill,
+                        color: accent.text,
+                        fontFamily: status === "success" ? fonts.mono : fonts.sans,
+                        fontSize: "0.74rem",
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                    }}
+                >
+                    {status === "success" && (
+                        <div style={{ marginBottom: "0.2rem", color: accent.text }}>
+                            <strong>Model:</strong> {model} <span style={{ opacity: 0.8 }}>— replied:</span> {result}
+                        </div>
+                    )}
+                    {status === "error" && result}
+                    {status === "testing" && result}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const SettingsInput = ({
     label,
     value,
@@ -670,6 +795,12 @@ const ProviderSettingsPanel = ({ provider, settings, onSettingChange }) => {
             />
             </>
         )}
+
+        {/* Test the credentials the player just entered against the displayed
+            provider — exercises auth, model resolution, and the relay fallback
+            exactly like a real turn, so a 401 or CORS block surfaces here rather
+            than mid-game. Restores the previously active provider afterwards. */}
+        <TestConnection provider={provider} />
 
         <div style={{ marginTop: "0.5rem" }}>
         <Toggle
