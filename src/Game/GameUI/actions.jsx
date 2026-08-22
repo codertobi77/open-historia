@@ -240,6 +240,7 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
     const [hasRequestedSuggestions, setHasRequestedSuggestions] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isImproving, setIsImproving] = React.useState(false);
+    const [improveError, setImproveError] = React.useState("");
     const [isSuggesting, setIsSuggesting] = React.useState(false);
     const inputRef = React.useRef(null);
     const lastRoundRef = React.useRef(null);
@@ -347,13 +348,21 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         }
 
         setIsImproving(true);
+        setImproveError("");
         try {
             const refined = await refinePlayerAction(trimmed, { persist: false });
             const improvedText = refined?.text || buildActionDisplayText(refined) || trimmed;
             setInputValue(improvedText);
             inputRef.current?.focus();
         } catch (error) {
+            // An upstream provider rejection (e.g. the free model refusing the
+            // large action schema) used to be swallowed into a deterministic
+            // fallback and this catch logged it to the console only — the player
+            // clicked Improve, saw nothing happen, and had no idea their provider
+            // rejected the request. Surface the real message so they can act on
+            // it (switch model, retry) instead of guessing.
             console.error("Failed to improve action:", error);
+            setImproveError(error?.message || "The AI could not refine this action.");
         } finally {
             setIsImproving(false);
         }
@@ -552,7 +561,11 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         className="actions-composer"
         placeholder="Enter your action…  (Shift+Enter for a new line)"
         value={inputValue}
-        onChange={(event) => setInputValue(event.target.value)}
+        onChange={(event) => {
+            setInputValue(event.target.value);
+            // Drop any stale Improve failure once the player edits the intent.
+            if (improveError) setImproveError("");
+        }}
         onKeyDown={handleKeyDown}
         style={{
             background: colors.canvas,
@@ -628,6 +641,26 @@ const ActionsPanel = ({ isOpen, onClose, onOpenAdvisor }) => {
         {isSubmitting ? <SpinnerRing size={14} tone={colors.onPrimary} /> : <SendIcon />}
         </button>
         </div>
+        {improveError && (
+            // Functional/error red — data-visualization color, not brand chrome,
+            // matching the stat-sheet failure panel. Lets the player act on the
+            // real provider message instead of a silent no-op.
+            <p
+            style={{
+                backgroundColor: "rgba(239,68,68,0.12)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                borderRadius: "6px",
+                color: colors.bodyStrong,
+                fontSize: "0.78rem",
+                lineHeight: "1.45",
+                margin: 0,
+                padding: "0.5rem 0.6rem",
+            }}
+            role="alert"
+            >
+            {improveError}
+            </p>
+        )}
         </>
         );
 

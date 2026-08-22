@@ -587,6 +587,21 @@ const runJsonTask = async (taskKey, {
     }
   } catch (error) {
     const actualError = controller.signal.aborted ? controller.signal.reason : error;
+    // An upstream provider/transport error (HTTP 5xx, quota, network, timeout)
+    // must NOT be masked into the deterministic fallback. A jump the provider
+    // rejected was never generated, so serving canned "events" would pretend the
+    // request succeeded and write a world that didn't happen — the classic "ai
+    // generation fails but the button test says OK" trap (TokenRouter 503 with a
+    // large tool schema). Rethrow so the caller's own error path shows the real
+    // provider message and the turn is NOT advanced. Validation failures never
+    // reach this block (they return {valid:false} from the loop), so the
+    // deterministic fallback below stays reserved for the model genuinely
+    // returning unusable JSON after both attempts.
+    if (!controller.signal.aborted) {
+      throw actualError instanceof Error ? actualError : new Error(String(actualError || failureReason));
+    }
+    // An abort (external Cancel, or the runJsonTask timeout) keeps its existing
+    // quiet/timeout-fallback behaviour; the timeout's reason is preserved below.
     failureReason = normalizeString(actualError?.message || actualError) || failureReason;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
